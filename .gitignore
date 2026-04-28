@@ -116,3 +116,10 @@ dmypy.json
 # =============================================================================
 uv.lock
 .python-version
+
+# Claude
+.claude/
+CLAUDE.md
+
+# SpecKit
+specs/

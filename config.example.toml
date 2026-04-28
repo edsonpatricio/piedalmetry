@@ -1,0 +1,78 @@
+# Pidalmetry Configuration File
+# ==============================
+# Copy this file to /etc/pidalmetry/config.toml and edit as needed.
+# All keys shown here with their default values.
+
+[general]
+# Enable mock mode: no real GPIO access (for development/testing)
+# Type: bool | Default: false
+mock_mode = false
+
+# Log level: DEBUG, INFO, WARNING, ERROR
+# Type: string | Default: "INFO"
+log_level = "INFO"
+
+# Log output target: "journald", "stdout", or "file"
+# Type: string | Default: "stdout"
+log_target = "stdout"
+
+[motor]
+# BCM GPIO pin number for ENA (PWM speed control)
+# Type: int | Default: 18 | Valid: 0-27
+gpio_ena = 18
+
+# BCM GPIO pin number for IN1 (direction control)
+# Type: int | Default: 23 | Valid: 0-27
+gpio_in1 = 23
+
+# BCM GPIO pin number for IN2 (direction control)
+# Type: int | Default: 24 | Valid: 0-27
+gpio_in2 = 24
+
+# PWM frequency in Hz
+# Type: int | Default: 1000 | Valid: 50-25000
+pwm_frequency = 100
+
+# Minimum brake pressure (%) to activate the motor
+# Below this value the motor stays off.
+# Type: int | Default: 30 | Valid: 0-99
+min_brake_pressure = 20
+
+# Minimum motor strength (%) when brake is at min_brake_pressure
+# 100% brake always maps to 100% motor (not configurable).
+# Type: int | Default: 50 | Valid: 1-99
+min_motor_strength = 40
+
+# Minimum car speed (km/h) to activate the motor
+# Motor stays off below this speed (e.g. stationary in pit).
+# Type: int | Default: 5 | Valid: 0-500
+min_car_speed = 30
+
+# Response curve exponent. Controls how brake pressure maps to motor strength.
+#   1.0 = linear (proportional)
+#   1.5 = mild power curve (gentle start, stronger finish)
+#   2.0 = quadratic (recommended — quiet under light braking, strong under heavy)
+# Type: float | Default: 1.0 | Valid: 0.1-10.0
+response_exponent = 2.0
+
+[anti_fluctuation]
+# Dead-zone threshold (%) — changes smaller than this are ignored
+# to prevent motor flutter from telemetry noise.
+# Type: float | Default: 2.0 | Valid: 0.0-50.0
+dead_zone = 2.0
+
+# Exponential moving average smoothing factor
+# 0.0 = disabled (no EMA), 1.0 = no smoothing (raw values)
+# Lower values = smoother but more latent
+# Type: float | Default: 0.3 | Valid: 0.0-1.0
+ema_alpha = 0.3
+
+[playstation]
+# PlayStation IP address. Leave empty for auto-discovery (same subnet only).
+# For cross-subnet setups, enter the IP manually.
+# Type: string | Default: ""
+ip = "192.168.1.50"
+
+# Human-friendly label for this console
+# Type: string | Default: ""
+label = "PS5"

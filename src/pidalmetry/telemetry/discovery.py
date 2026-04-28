@@ -1,0 +1,142 @@
+"""PlayStation broadcast discovery via GT7 heartbeat protocol.
+
+References:
+  - GT7 protocol: heartbeat 'A' on port 33739, response on 33740
+  - Cross-subnet note: broadcast discovery only works on same subnet.
+    For cross-subnet setups, use directed discovery.
+"""
+
+from __future__ import annotations
+
+import logging
+import socket
+import time
+
+_log = logging.getLogger("pidalmetry.telemetry.discovery")
+
+SEND_PORT = 33739
+RECV_PORT = 33740
+HEARTBEAT = b"A"
+
+
+def discover_playstation(
+    timeout: float = 10.0,
+    target_ip: str = "",
+) -> str | None:
+    """Discover a PlayStation running GT7 on the network.
+
+    If target_ip is provided, sends a directed heartbeat to verify
+    reachability. Otherwise broadcasts on the local subnet.
+
+    Returns:
+        The PlayStation IP address, or None if not found.
+    """
+    _log.info(
+        "discovery started timeout_s=%.1f directed=%s",
+        timeout,
+        bool(target_ip),
+    )
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(timeout)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    try:
+        sock.bind(("0.0.0.0", RECV_PORT))
+
+        if target_ip:
+            sock.sendto(HEARTBEAT, (target_ip, SEND_PORT))
+        else:
+            sock.sendto(HEARTBEAT, ("255.255.255.255", SEND_PORT))
+
+        data, addr = sock.recvfrom(4096)
+        if len(data) > 0:
+            _log.info("discovery success ps_ip=%s", addr[0])
+            return addr[0]
+        return None
+
+    except TimeoutError:
+        _log.error("discovery timeout after %.1fs — no PlayStation found", timeout)
+        return None
+    except OSError as exc:
+        _log.warning("discovery error: %s", exc)
+        return None
+    finally:
+        sock.close()
+
+
+class DiscoveryManager:
+    """Manages PlayStation discovery with retry and re-discovery logic.
+
+    State machine:
+      CheckConfig → Connected (if IP responds)
+      CheckConfig → Discovering (if IP empty)
+      Connected → FailCount(1-3) → Discovering (after 3 failures)
+    """
+
+    def __init__(
+        self,
+        initial_ip: str = "",
+        retry_interval: float = 3.0,
+        discovery_timeout: float = 10.0,
+    ) -> None:
+        self._ip = initial_ip
+        self._retry_interval = retry_interval
+        self._discovery_timeout = discovery_timeout
+        self._fail_count = 0
+        self._last_attempt: float = 0.0
+
+    @property
+    def target_ip(self) -> str:
+        return self._ip
+
+    @property
+    def fail_count(self) -> int:
+        return self._fail_count
+
+    def record_success(self) -> None:
+        """Record a successful connection."""
+        self._fail_count = 0
+
+    def record_failure(self) -> bool:
+        """Record a connection failure.
+
+        Returns:
+            True if re-discovery should be triggered (3 failures reached).
+        """
+        now = time.monotonic()
+        if now - self._last_attempt < self._retry_interval:
+            return False
+
+        self._last_attempt = now
+        self._fail_count += 1
+
+        _log.warning(
+            "discovery failure fail_count=%d ps_ip=%s",
+            self._fail_count,
+            self._ip,
+        )
+
+        if self._fail_count >= 3:
+            _log.warning(
+                "3 consecutive failures for ps_ip=%s — clearing IP, re-discovering",
+                self._ip,
+            )
+            self._ip = ""
+            self._fail_count = 0
+            return True
+        return False
+
+    def run_discovery(self) -> str | None:
+        """Run discovery and update internal IP on success."""
+        ip = discover_playstation(
+            timeout=self._discovery_timeout,
+            target_ip=self._ip,
+        )
+        if ip:
+            self._ip = ip
+            self._fail_count = 0
+            _log.info("discovery manager: connected ps_ip=%s", ip)
+        else:
+            _log.warning("discovery manager: no PlayStation found")
+        return ip
