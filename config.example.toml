@@ -77,8 +77,8 @@ ema_alpha = 0.3
 [playstation]
 # PlayStation IP address. Leave empty for auto-discovery (same subnet only).
 # For cross-subnet setups, enter the IP manually.
-# Type: string | Default: "192.168.1.50"
-ip = "192.168.1.50"
+# Type: string | Default: ""
+ip = ""
 
 # Human-friendly label for this console
 # Type: string | Default: "PS5"
