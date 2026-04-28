@@ -31,36 +31,36 @@ gpio_in2 = 24
 
 # PWM frequency in Hz
 # Type: int | Default: 1000 | Valid: 50-25000
-pwm_frequency = 100
+pwm_frequency = 1000
 
 # Minimum brake pressure (%) to activate the motor
 # Below this value the motor stays off.
 # Type: int | Default: 30 | Valid: 0-99
-min_brake_pressure = 20
+min_brake_pressure = 30
 
 # Minimum motor strength (%) when brake is at min_brake_pressure
 # At max_brake_pressure the motor reaches 100%.
 # Type: int | Default: 50 | Valid: 1-99
-min_motor_strength = 40
+min_motor_strength = 50
 
 # Minimum car speed (km/h) to activate the motor
 # Motor stays off below this speed (e.g. stationary in pit).
 # Type: int | Default: 5 | Valid: 0-500
-min_car_speed = 30
+min_car_speed = 5
 
 # Response curve exponent. Controls how brake pressure maps to motor strength.
 #   1.0 = linear (proportional)
 #   1.5 = mild power curve (gentle start, stronger finish)
 #   2.0 = quadratic (recommended — quiet under light braking, strong under heavy)
 # Type: float | Default: 1.0 | Valid: 0.1-10.0
-response_exponent = 10
+response_exponent = 1.0
 
 # Top-limit pattern: brake pressure (%) above which the motor pulses in rapid
 # bursts at full power instead of continuous rotation, simulating the feel of
 # a car on the verge of skidding (ABS-like rumble, ~6 Hz).
 # Must be greater than min_brake_pressure. Set to 0 to disable.
 # Type: int | Default: 0 (disabled) | Valid: 0, or (min_brake_pressure+1)-100
-top_limit_pattern = 98
+top_limit_pattern = 0
 
 [anti_fluctuation]
 # Dead-zone threshold (%) — changes smaller than this are ignored
@@ -78,8 +78,8 @@ ema_alpha = 0.3
 # PlayStation IP address. Leave empty for auto-discovery (same subnet only).
 # For cross-subnet setups, enter the IP manually.
 # Type: string | Default: ""
-ip = "192.168.1.50"
+ip = ""
 
 # Human-friendly label for this console
 # Type: string | Default: ""
-label = "PS5"
+label = ""
