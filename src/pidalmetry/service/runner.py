@@ -12,6 +12,9 @@ import time
 from collections import deque
 from typing import Any
 
+# Half-period for top_limit_pattern pulse: 80 ms on / 80 ms off ≈ 6 Hz ABS-like rumble
+_PULSE_HALF_PERIOD_S = 0.08
+
 from pidalmetry.config import AppConfig
 from pidalmetry.logging import LatencyTracker, setup_logging
 from pidalmetry.motor.controller import MotorController, MotorControllerBase
@@ -35,6 +38,8 @@ class Runner:
         self._tracker = LatencyTracker(self._logger, "pipeline")
         self._running = False
         self._packet_queue: deque[TelemetryPacket] = deque(maxlen=1)
+        self._pulse_on = True
+        self._pulse_last_toggle = 0.0
 
         # Select motor controller
         self._motor: MotorControllerBase
@@ -47,14 +52,6 @@ class Runner:
                 gpio_in1=config.motor.gpio_in1,
                 gpio_in2=config.motor.gpio_in2,
                 pwm_frequency=config.motor.pwm_frequency,
-            )
-            self._logger.info(
-                "Motor controller: REAL GPIO",
-                extra={"kv": {
-                    "ena": config.motor.gpio_ena,
-                    "in1": config.motor.gpio_in1,
-                    "in2": config.motor.gpio_in2,
-                }},
             )
 
     def _on_packet(self, pkt: TelemetryPacket) -> None:
@@ -75,6 +72,28 @@ class Runner:
         signal.signal(signal.SIGTERM, _signal_handler)
 
         ps_ip = self._config.playstation.ip
+
+        m = self._config.motor
+        af = self._config.anti_fluctuation
+        self._logger.info(
+            "Configuration",
+            extra={"kv": {
+                "mock_mode": self._config.mock_mode,
+                "gpio_ena": m.gpio_ena,
+                "gpio_in1": m.gpio_in1,
+                "gpio_in2": m.gpio_in2,
+                "pwm_frequency": m.pwm_frequency,
+                "min_brake_pressure": m.min_brake_pressure,
+                "min_motor_strength": m.min_motor_strength,
+                "min_car_speed": m.min_car_speed,
+                "response_exponent": m.response_exponent,
+                "top_limit_pattern": m.top_limit_pattern if m.top_limit_pattern > 0 else "disabled",
+                "dead_zone": af.dead_zone,
+                "ema_alpha": af.ema_alpha,
+                "ps_label": self._config.playstation.label or "(none)",
+            }},
+        )
+
         self._logger.info(
             "Starting telemetry listener",
             extra={"kv": {"ps_ip": ps_ip or "auto-discover"}},
@@ -115,13 +134,23 @@ class Runner:
                 # Filter brake pressure
                 filtered = self._filter.filter(pkt.brake_pressure)
 
-                # Map to motor duty cycle
-                duty = map_brake_to_motor(
-                    filtered,
-                    self._config.motor.min_brake_pressure,
-                    self._config.motor.min_motor_strength,
-                    exponent=self._config.motor.response_exponent,
-                )
+                # Top-limit pattern: pulse at full vibration at/above threshold
+                top_limit = self._config.motor.top_limit_pattern
+                if top_limit > 0 and filtered >= top_limit:
+                    now = time.monotonic()
+                    if now - self._pulse_last_toggle >= _PULSE_HALF_PERIOD_S:
+                        self._pulse_on = not self._pulse_on
+                        self._pulse_last_toggle = now
+                    duty = 100.0 if self._pulse_on else 0.0
+                else:
+                    self._pulse_on = True
+                    self._pulse_last_toggle = 0.0
+                    duty = map_brake_to_motor(
+                        filtered,
+                        self._config.motor.min_brake_pressure,
+                        self._config.motor.min_motor_strength,
+                        exponent=self._config.motor.response_exponent,
+                    )
 
                 self._motor.set_duty_cycle(duty)
                 self._tracker.stop_and_log()

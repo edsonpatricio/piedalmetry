@@ -2,7 +2,6 @@
 
 The mapping runs from (min_brake → min_motor) to (100% → 100%).
 Below min_brake the motor is off (0%).
-100% brake always maps to 100% motor — this is NOT configurable (FR-014).
 
 The response exponent controls the curve shape:
   exponent = 1.0  → linear (proportional)
@@ -32,14 +31,19 @@ def map_brake_to_motor(
     Returns:
         Motor duty cycle 0.0–100.0%.
     """
+    # Clamp sensor over-range so a noisy 100%+ input still hits full duty.
+    if brake_pct > 100.0:
+        brake_pct = 100.0
+
     if brake_pct < min_brake:
         return 0.0
 
-    if brake_pct >= 100.0:
-        return 100.0
+    span = 100 - min_brake
+    if span <= 0:
+        return float(min_motor)
 
     # Normalise brake position to [0, 1] within the active range
-    t = (brake_pct - min_brake) / (100.0 - min_brake)
+    t = (brake_pct - min_brake) / span
 
     if exponent != 1.0:
         t = t ** exponent

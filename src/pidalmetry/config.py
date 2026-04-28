@@ -35,6 +35,7 @@ class MotorConfig:
     min_motor_strength: int = 50
     min_car_speed: int = 5
     response_exponent: float = 1.0
+    top_limit_pattern: int = 0
 
 
 @dataclass
@@ -73,6 +74,7 @@ _VALIDATORS: dict[str, tuple[type, Any, Any]] = {
     "motor.min_motor_strength": (int, 1, 99),
     "motor.min_car_speed": (int, 0, 500),
     "motor.response_exponent": (float, 0.1, 10.0),
+    "motor.top_limit_pattern": (int, 0, 100),
     "anti_fluctuation.dead_zone": (float, 0.0, 50.0),
     "anti_fluctuation.ema_alpha": (float, 0.0, 1.0),
 }
@@ -127,6 +129,19 @@ def _validate(data: dict[str, Any]) -> list[str]:
                 f"Invalid value for {key}: {val} (valid: {min_val}-{max_val})"
             )
 
+    top_limit = _get_nested(data, "motor.top_limit_pattern")
+    min_brake = _get_nested(data, "motor.min_brake_pressure")
+    if (
+        isinstance(top_limit, (int, float))
+        and top_limit > 0
+        and isinstance(min_brake, (int, float))
+        and top_limit <= min_brake
+    ):
+        errors.append(
+            f"Invalid value for motor.top_limit_pattern: {top_limit} "
+            f"(must be greater than motor.min_brake_pressure={min_brake})"
+        )
+
     return errors
 
 
@@ -170,6 +185,7 @@ def load_config(path: str | Path) -> AppConfig:
             min_motor_strength=motor_data.get("min_motor_strength", 50),
             min_car_speed=motor_data.get("min_car_speed", 5),
             response_exponent=float(motor_data.get("response_exponent", 1.0)),
+            top_limit_pattern=int(motor_data.get("top_limit_pattern", 0)),
         ),
         anti_fluctuation=AntiFluctuationConfig(
             dead_zone=af_data.get("dead_zone", 2.0),
