@@ -84,3 +84,36 @@ class TestConfigInvalid:
         _write_toml(cfg_file, "[motor]\npwm_frequency = 10\n")
         with pytest.raises(ConfigError, match="pwm_frequency.*10.*50-25000"):
             load_config(cfg_file)
+
+    def test_top_limit_pattern_default_is_zero(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[general]\nmock_mode = true\n")
+        cfg = load_config(cfg_file)
+        assert cfg.motor.top_limit_pattern == 0
+
+    def test_top_limit_pattern_loaded(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[motor]\nmin_brake_pressure = 30\ntop_limit_pattern = 85\n")
+        cfg = load_config(cfg_file)
+        assert cfg.motor.top_limit_pattern == 85
+
+    def test_top_limit_pattern_out_of_range(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[motor]\ntop_limit_pattern = 150\n")
+        with pytest.raises(ConfigError, match="top_limit_pattern.*150.*0-100"):
+            load_config(cfg_file)
+
+    def test_top_limit_pattern_must_exceed_min_brake(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(
+            cfg_file,
+            "[motor]\nmin_brake_pressure = 60\ntop_limit_pattern = 50\n",
+        )
+        with pytest.raises(ConfigError, match="top_limit_pattern.*greater than"):
+            load_config(cfg_file)
+
+    def test_top_limit_pattern_zero_disables_check(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[motor]\nmin_brake_pressure = 60\ntop_limit_pattern = 0\n")
+        cfg = load_config(cfg_file)
+        assert cfg.motor.top_limit_pattern == 0

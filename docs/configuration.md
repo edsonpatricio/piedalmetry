@@ -52,6 +52,8 @@ when running as a service). `log_target = "file"` writes to
 | `min_brake_pressure` | int | `30` | 0–99 | Brake % below which motor is off |
 | `min_motor_strength` | int | `50` | 1–99 | Motor % when brake = `min_brake_pressure` |
 | `min_car_speed` | int | `5` | 0–500 | Car speed (km/h) below which motor is off |
+| `response_exponent` | float | `1.0` | 0.1–10.0 | Response curve shape (1.0 = linear) |
+| `top_limit_pattern` | int | `0` | 0 or (`min_brake_pressure`+1)–100 | Brake % above which motor pulses; `0` = disabled |
 
 ```toml
 [motor]
@@ -62,11 +64,23 @@ pwm_frequency = 1000
 min_brake_pressure = 30
 min_motor_strength = 50
 min_car_speed = 5
+response_exponent = 2.0
+top_limit_pattern = 0
 ```
 
-**Mapping curve**: Linear from `(min_brake_pressure → min_motor_strength)`
+**Mapping curve**: Scales from `(min_brake_pressure → min_motor_strength)`
 to `(100% → 100%)`. Below `min_brake_pressure` the motor is off.
-100% brake always maps to 100% motor — not configurable.
+
+**`response_exponent`**: Controls the shape of the brake-to-motor curve.
+- `1.0` — linear (proportional)
+- `> 1.0` — power curve: quiet under light braking, aggressive under heavy
+- `2.0` — quadratic; recommended for realistic haptic rumble feel
+
+**`top_limit_pattern`**: When set to a non-zero value, the motor switches
+from continuous rotation to a rapid burst pattern at/above that brake
+percentage — 100% duty in 80 ms on/off cycles (~6 Hz), simulating the feel
+of a car on the verge of skidding. Must be greater than `min_brake_pressure`.
+Set to `0` to disable (default).
 
 See [docs/hardware/rpi2b-pinout.md](hardware/rpi2b-pinout.md) for BCM
 pin numbering. Defaults match the standard Pidalmetry wiring.
