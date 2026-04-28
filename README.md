@@ -16,11 +16,20 @@ through your pedals or seat.
 ## Hardware
 
 - Raspberry Pi 2 Model B (DietPi)
+  - This is a really old one, but it's more than enough.
 - L298N dual H-bridge motor driver module
-- 12V DC rumble motor
-- 12V power supply for the motor
+  - https://pt.aliexpress.com/item/1005006739178065.html
+  - Up to 2 motors
+- 12V DC rumble motor (R260)
+  - https://pt.aliexpress.com/item/1005010209259017.html
+- 12V 1A power supply for the motor
 
 Wiring: [docs/hardware/wiring.md](docs/hardware/wiring.md)
+
+## Dependencies
+- Python 3.11+
+- uv
+- Others described in the uv pyproject.toml
 
 ## Quick Start
 
@@ -51,6 +60,12 @@ Full installation guide: [docs/installation.md](docs/installation.md)
 | `pidalmetry start / stop / restart` | Control the service |
 | `pidalmetry log` | View service logs |
 | `pidalmetry troubleshoot` | Run diagnostics |
+
+
+### Running directly from the source with uv
+```bash
+uv run python -m pidalmetry run --config config.example.toml --log-level INFO
+```
 
 ## Configuration
 
