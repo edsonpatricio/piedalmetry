@@ -1,7 +1,7 @@
 """Unit tests for Salsa20 decryption — T009."""
 
 
-from pidalmetry.telemetry.decrypt import decrypt
+from piedalmetry.telemetry.decrypt import decrypt
 
 
 class TestDecrypt:

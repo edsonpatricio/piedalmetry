@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from pidalmetry.config import (
+from piedalmetry.config import (
     AntiFluctuationConfig,
     AppConfig,
     MotorConfig,

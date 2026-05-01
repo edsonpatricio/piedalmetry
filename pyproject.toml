@@ -1,5 +1,5 @@
 [project]
-name = "pidalmetry"
+name = "piedalmetry"
 version = "0.1.0"
 description = "GT7 brake-pressure-to-motor rumble feedback for Raspberry Pi 2B"
 readme = "README.md"
@@ -15,14 +15,14 @@ dependencies = [
 ]
 
 [project.scripts]
-pidalmetry = "pidalmetry.cli:main"
+piedalmetry = "piedalmetry.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pidalmetry"]
+packages = ["src/piedalmetry"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

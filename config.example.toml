@@ -1,6 +1,6 @@
-# Pidalmetry Configuration File
+# Piedalmetry Configuration File
 # ==============================
-# Copy this file to /etc/pidalmetry/config.toml and edit as needed.
+# Copy this file to /etc/piedalmetry/config.toml and edit as needed.
 # All keys shown here with their default values.
 
 [general]
@@ -19,15 +19,15 @@ log_target = "stdout"
 [motor]
 # BCM GPIO pin number for ENA (PWM speed control)
 # Type: int | Default: 18 | Valid: 0-27
-gpio_ena = 18
+gpio_ena = 18  # physical pin 12
 
 # BCM GPIO pin number for IN1 (direction control)
 # Type: int | Default: 23 | Valid: 0-27
-gpio_in1 = 23
+gpio_in1 = 23  # physical pin 16
 
 # BCM GPIO pin number for IN2 (direction control)
 # Type: int | Default: 24 | Valid: 0-27
-gpio_in2 = 24
+gpio_in2 = 24  # physical pin 18
 
 # PWM frequency in Hz
 # Type: int | Default: 100 | Valid: 50-25000

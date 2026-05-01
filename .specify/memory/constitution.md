@@ -16,7 +16,7 @@
   Follow-up TODOs: None
 -->
 
-# Pidalmetry Constitution
+# Piedalmetry Constitution
 
 ## Core Principles
 
@@ -99,7 +99,7 @@ The application MUST run as a systemd service on DietPi:
 - Python with `uv` as the sole dependency/project manager
 - Minimal dependency tree — every third-party package MUST be
   justified in `pyproject.toml` comments or docs
-- Single `uv sync && pidalmetry install` MUST be sufficient to
+- Single `uv sync && piedalmetry install` MUST be sufficient to
   go from a fresh DietPi image to a running service
 - YAGNI: no web UI, no database, no cloud connectivity unless
   explicitly requested later
@@ -146,7 +146,7 @@ configuration file — not hard-coded or solely via CLI flags:
 - CLI flags MAY override config file values, but the config file
   is the canonical source of truth
 - Config file location MUST follow XDG conventions or use a
-  well-documented fixed path (e.g. `/etc/pidalmetry/config.toml`)
+  well-documented fixed path (e.g. `/etc/piedalmetry/config.toml`)
 - Rationale: A headless Pi cannot be interactively configured;
   a single, validated config file reduces deployment errors and
   enables reproducible setups across devices.
@@ -178,7 +178,7 @@ configuration file — not hard-coded or solely via CLI flags:
 - **Code style**: `ruff` for linting and formatting; enforced in CI
 - **Type checking**: `mypy` strict mode; all public APIs MUST have
   type annotations
-- **Code storage and cross-compilitaion**: This repo is mirrored on dietpi@192.168.1.128 (copies thourght SSH is not necessary, it is already mirrored), in /home/dietpi/dev/pidalmetry. The code can be create here, but it MUST be run and tested on the RPi 2B, not on host Mac. Cross-compilation is not an option, the codeMUST be run on the target hardware (RPi2B). We can run thought SSH. The 2 machines have ssh key exchanged so the password is not needed. Use SSH only run test commands never copy files, code, or compilation procedures.
+- **Code storage and cross-compilitaion**: This repo is mirrored on dietpi@192.168.1.128 (copies thourght SSH is not necessary, it is already mirrored), in /home/dietpi/dev/piedalmetry. The code can be create here, but it MUST be run and tested on the RPi 2B, not on host Mac. Cross-compilation is not an option, the codeMUST be run on the target hardware (RPi2B). We can run thought SSH. The 2 machines have ssh key exchanged so the password is not needed. Use SSH only run test commands never copy files, code, or compilation procedures.
 - **PlayStation IP Address for tests**: 192.168.1.50
 
 ### Documentation Deliverables (Mandatory)
@@ -237,7 +237,7 @@ in their module docstring.
 ## Governance
 
 - This constitution supersedes all other development practices for
-  the Pidalmetry project.
+  the Piedalmetry project.
 - Amendments require: (1) a written proposal, (2) updated
   constitution with version bump, (3) propagation to all dependent
   templates.

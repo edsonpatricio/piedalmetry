@@ -18,11 +18,11 @@ import threading
 import time
 from collections.abc import Callable
 
-from pidalmetry.telemetry.decrypt import decrypt
-from pidalmetry.telemetry.discovery import DiscoveryManager
-from pidalmetry.telemetry.parser import TelemetryPacket, parse
+from piedalmetry.telemetry.decrypt import decrypt
+from piedalmetry.telemetry.discovery import DiscoveryManager
+from piedalmetry.telemetry.parser import TelemetryPacket, parse
 
-_log = logging.getLogger("pidalmetry.telemetry.listener")
+_log = logging.getLogger("piedalmetry.telemetry.listener")
 
 SEND_PORT = 33739
 RECV_PORT = 33740

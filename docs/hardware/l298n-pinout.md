@@ -34,7 +34,7 @@ pin to supply logic power to L298N instead.
 
 ### Control Header (2.54mm header, right side)
 
-| Pin | Label | Description | Pidalmetry |
+| Pin | Label | Description | Piedalmetry |
 |-----|-------|-------------|------------|
 | 1 | ENA | Enable A — PWM speed control for OUT1/OUT2 | GPIO 18 (BCM) |
 | 2 | IN1 | Direction input 1 for Motor A | GPIO 23 (BCM) |
@@ -59,7 +59,7 @@ it to +5V (always enabled). This must be **removed** to enable PWM
 speed control:
 
 ```text
-BEFORE (shipped):           AFTER (Pidalmetry):
+BEFORE (shipped):           AFTER (Piedalmetry):
   ┌─────┐                     ┌─────┐
   │█████│ ← jumper in place   │     │ ← jumper removed
   └─────┘                     └─────┘
@@ -69,7 +69,7 @@ BEFORE (shipped):           AFTER (Pidalmetry):
 If the jumper is not removed, the motor runs at full speed regardless
 of GPIO 18 PWM signal.
 
-## Motor A Wiring for Pidalmetry
+## Motor A Wiring for Piedalmetry
 
 ```mermaid
 graph LR
@@ -84,7 +84,7 @@ graph LR
     IN2 --> |"H-bridge direction"| OUT2
 ```
 
-Pidalmetry sets IN1=HIGH, IN2=LOW at startup (forward direction). The
+Piedalmetry sets IN1=HIGH, IN2=LOW at startup (forward direction). The
 ENA pin receives PWM from GPIO 18 to control speed. The motor spins
 as long as ENA duty > 0% and IN1/IN2 are correctly set.
 
@@ -104,5 +104,5 @@ A 12V, 1A supply is sufficient for a single small rumble motor.
 
 The L298N generates significant heat under load. The heatsink on the
 module is often inadequate for sustained 2A operation. For a single
-rumble motor at low duty cycles (typical Pidalmetry use), the default
+rumble motor at low duty cycles (typical Piedalmetry use), the default
 heatsink is sufficient.

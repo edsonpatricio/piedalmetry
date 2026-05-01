@@ -15,14 +15,14 @@ from typing import Any
 # Half-period for top_limit_pattern pulse: 80 ms on / 80 ms off ≈ 6 Hz ABS-like rumble
 _PULSE_HALF_PERIOD_S = 0.08
 
-from pidalmetry.config import AppConfig
-from pidalmetry.logging import LatencyTracker, setup_logging
-from pidalmetry.motor.controller import MotorController, MotorControllerBase
-from pidalmetry.motor.filter import BrakeFilter
-from pidalmetry.motor.mapping import map_brake_to_motor
-from pidalmetry.motor.mock import MockMotorController
-from pidalmetry.telemetry.listener import TelemetryListener
-from pidalmetry.telemetry.parser import TelemetryPacket
+from piedalmetry.config import AppConfig
+from piedalmetry.logging import LatencyTracker, setup_logging
+from piedalmetry.motor.controller import MotorController, MotorControllerBase
+from piedalmetry.motor.filter import BrakeFilter
+from piedalmetry.motor.mapping import map_brake_to_motor
+from piedalmetry.motor.mock import MockMotorController
+from piedalmetry.telemetry.listener import TelemetryListener
+from piedalmetry.telemetry.parser import TelemetryPacket
 
 
 class Runner:
@@ -104,7 +104,7 @@ class Runner:
                 "PlayStation discovered — persisting IP",
                 extra={"kv": {"ps_ip": ip}},
             )
-            from pidalmetry.config import write_back_ip
+            from piedalmetry.config import write_back_ip
             write_back_ip(self._config, ip)
 
         listener = TelemetryListener(

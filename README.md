@@ -1,4 +1,4 @@
-# Pidalmetry
+# Piedalmetry
 
 Real-time brake-pressure-to-motor-vibration feedback for Gran Turismo 7,
 running on a Raspberry Pi 2B. When you brake in GT7, a rumble motor
@@ -8,7 +8,7 @@ through your pedals or seat.
 ## How It Works
 
 1. GT7 broadcasts UDP telemetry (Salsa20-encrypted) on port 33740
-2. Pidalmetry decrypts each packet and extracts brake pressure and car speed
+2. Piedalmetry decrypts each packet and extracts brake pressure and car speed
 3. An anti-fluctuation filter (dead-zone + EMA) smooths noisy input
 4. A configurable linear mapping converts brake % to motor PWM duty cycle
 5. An L298N motor driver receives the PWM signal and drives the 12V rumble motor
@@ -35,13 +35,13 @@ Wiring: [docs/hardware/wiring.md](docs/hardware/wiring.md)
 
 ```bash
 # On the Pi:
-cd ~/dev/pidalmetry
+cd ~/dev/piedalmetry
 uv sync
-sudo mkdir -p /etc/pidalmetry
-sudo cp config.example.toml /etc/pidalmetry/config.toml
+sudo mkdir -p /etc/piedalmetry
+sudo cp config.example.toml /etc/piedalmetry/config.toml
 # Edit config: set playstation.ip and verify GPIO pins
-sudo uv run python -m pidalmetry install
-pidalmetry status
+sudo uv run python -m piedalmetry install
+piedalmetry status
 ```
 
 Full installation guide: [docs/installation.md](docs/installation.md)
@@ -50,27 +50,27 @@ Full installation guide: [docs/installation.md](docs/installation.md)
 
 | Command | Description |
 |---------|-------------|
-| `pidalmetry run` | Start the telemetry listener and motor driver |
-| `pidalmetry mock --sweep` | Sweep motor 0→100→0 without a PS5 |
-| `pidalmetry mock --brake 50` | Hold motor at 50% without a PS5 |
-| `pidalmetry discover` | Find PS5 on the network |
-| `pidalmetry install` | Install as systemd service |
-| `pidalmetry uninstall` | Remove systemd service |
-| `pidalmetry status` | Show service status |
-| `pidalmetry start / stop / restart` | Control the service |
-| `pidalmetry log` | View service logs |
-| `pidalmetry troubleshoot` | Run diagnostics |
+| `piedalmetry run` | Start the telemetry listener and motor driver |
+| `piedalmetry mock --sweep` | Sweep motor 0→100→0 without a PS5 |
+| `piedalmetry mock --brake 50` | Hold motor at 50% without a PS5 |
+| `piedalmetry discover` | Find PS5 on the network |
+| `piedalmetry install` | Install as systemd service |
+| `piedalmetry uninstall` | Remove systemd service |
+| `piedalmetry status` | Show service status |
+| `piedalmetry start / stop / restart` | Control the service |
+| `piedalmetry log` | View service logs |
+| `piedalmetry troubleshoot` | Run diagnostics |
 
 
 ### Running directly from the source with uv
 ```bash
-uv run python -m pidalmetry run --config config.example.toml --log-level INFO
+uv run python -m piedalmetry run --config config.example.toml --log-level INFO
 ```
 
 ## Configuration
 
 All parameters are in a validated TOML config file. Copy
-`config.example.toml` to `/etc/pidalmetry/config.toml` and edit:
+`config.example.toml` to `/etc/piedalmetry/config.toml` and edit:
 
 ```toml
 [motor]

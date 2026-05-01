@@ -1,4 +1,4 @@
-"""Structured logging setup for Pidalmetry.
+"""Structured logging setup for Piedalmetry.
 
 All log entries use key=value format for machine parseability.
 References Constitution Principle II: Observability & Structured Logging.
@@ -49,9 +49,9 @@ def setup_logging(level: str = "INFO", target: str = "stdout") -> KVLoggerAdapte
         target: One of "stdout", "journald", "file".
 
     Returns:
-        A KVLoggerAdapter wrapping the root pidalmetry logger.
+        A KVLoggerAdapter wrapping the root piedalmetry logger.
     """
-    logger = logging.getLogger("pidalmetry")
+    logger = logging.getLogger("piedalmetry")
     logger.setLevel(getattr(logging, level.upper(), logging.INFO))
     logger.handlers.clear()
 
@@ -60,7 +60,7 @@ def setup_logging(level: str = "INFO", target: str = "stdout") -> KVLoggerAdapte
         # journald receives from stdout when run as systemd service
         handler = logging.StreamHandler(sys.stdout)
     elif target == "file":
-        handler = logging.FileHandler("/var/log/pidalmetry.log")
+        handler = logging.FileHandler("/var/log/piedalmetry.log")
     else:
         handler = logging.StreamHandler(sys.stdout)
 

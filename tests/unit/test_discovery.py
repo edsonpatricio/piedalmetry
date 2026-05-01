@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from pidalmetry.telemetry.discovery import DiscoveryManager
+from piedalmetry.telemetry.discovery import DiscoveryManager
 
 
 class TestDiscoveryManagerStateTransitions:
@@ -27,7 +27,7 @@ class TestDiscoveryManagerStateTransitions:
         mgr = DiscoveryManager(initial_ip="192.168.1.50")
         # Simulate one failure — monotonic must return > retry_interval(3.0)
         # since _last_attempt starts at 0.0
-        with patch("pidalmetry.telemetry.discovery.time") as mock_time:
+        with patch("piedalmetry.telemetry.discovery.time") as mock_time:
             mock_time.monotonic.return_value = 3.5
             mgr.record_failure()
         assert mgr.fail_count == 1
@@ -51,7 +51,7 @@ class TestDiscoveryManagerStateTransitions:
             idx += 1
             return val
 
-        with patch("pidalmetry.telemetry.discovery.time") as mock_time:
+        with patch("piedalmetry.telemetry.discovery.time") as mock_time:
             mock_time.monotonic.side_effect = monotonic_side_effect
 
             rediscover1 = mgr.record_failure()
@@ -73,7 +73,7 @@ class TestDiscoveryManagerStateTransitions:
             initial_ip="192.168.1.50",
             retry_interval=3.0,
         )
-        with patch("pidalmetry.telemetry.discovery.time") as mock_time:
+        with patch("piedalmetry.telemetry.discovery.time") as mock_time:
             # First call: 3.5s after t=0.0 (last_attempt) → accepted
             # Second call: 5.0s - only 1.5s after 3.5 → too soon → ignored
             mock_time.monotonic.side_effect = [3.5, 5.0]
@@ -89,7 +89,7 @@ class TestDiscoveryManagerStateTransitions:
         mgr = DiscoveryManager(initial_ip="")
 
         with patch(
-            "pidalmetry.telemetry.discovery.discover_playstation",
+            "piedalmetry.telemetry.discovery.discover_playstation",
             return_value="192.168.1.50",
         ):
             ip = mgr.run_discovery()
@@ -102,7 +102,7 @@ class TestDiscoveryManagerStateTransitions:
         mgr = DiscoveryManager(initial_ip="")
 
         with patch(
-            "pidalmetry.telemetry.discovery.discover_playstation",
+            "piedalmetry.telemetry.discovery.discover_playstation",
             return_value=None,
         ):
             ip = mgr.run_discovery()
@@ -116,9 +116,9 @@ class TestDiscoverPlaystationFunction:
 
     def test_timeout_returns_none(self) -> None:
 
-        from pidalmetry.telemetry.discovery import discover_playstation
+        from piedalmetry.telemetry.discovery import discover_playstation
 
-        with patch("pidalmetry.telemetry.discovery.socket.socket") as mock_sock_cls:
+        with patch("piedalmetry.telemetry.discovery.socket.socket") as mock_sock_cls:
             mock_sock = mock_sock_cls.return_value.__enter__.return_value
             mock_sock_cls.return_value = mock_sock
             mock_sock.recvfrom.side_effect = TimeoutError()
@@ -130,9 +130,9 @@ class TestDiscoverPlaystationFunction:
         assert result is None
 
     def test_successful_response_returns_ip(self) -> None:
-        from pidalmetry.telemetry.discovery import discover_playstation
+        from piedalmetry.telemetry.discovery import discover_playstation
 
-        with patch("pidalmetry.telemetry.discovery.socket.socket") as mock_sock_cls:
+        with patch("piedalmetry.telemetry.discovery.socket.socket") as mock_sock_cls:
             mock_sock = mock_sock_cls.return_value
             mock_sock.recvfrom.return_value = (b"data", ("192.168.1.50", 33740))
             mock_sock.bind.return_value = None

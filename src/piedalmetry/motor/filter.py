@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 
-_log = logging.getLogger("pidalmetry.motor.filter")
+_log = logging.getLogger("piedalmetry.motor.filter")
 
 # Changes larger than this multiple of dead_zone bypass EMA immediately.
 _LARGE_CHANGE_MULTIPLIER = 5.0

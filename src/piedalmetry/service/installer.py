@@ -6,18 +6,18 @@ import os
 import subprocess
 from pathlib import Path
 
-_UNIT_PATH = Path("/etc/systemd/system/pidalmetry.service")
+_UNIT_PATH = Path("/etc/systemd/system/piedalmetry.service")
 
 _UNIT_TEMPLATE = """\
 [Unit]
-Description=Pidalmetry GT7 Brake-to-Motor Feedback
+Description=Piedalmetry GT7 Brake-to-Motor Feedback
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User={user}
-ExecStart={uv_path} run python -m pidalmetry run --config {config_path}
+ExecStart={uv_path} run python -m piedalmetry run --config {config_path}
 Restart=on-failure
 RestartSec=5
 
@@ -26,8 +26,8 @@ WantedBy=multi-user.target
 """
 
 
-def install_service(config_path: str = "/etc/pidalmetry/config.toml") -> None:
-    """Install pidalmetry as a systemd service."""
+def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
+    """Install piedalmetry as a systemd service."""
     uv_path = _find_uv()
     user = os.environ.get("USER", "dietpi")
 
@@ -41,15 +41,15 @@ def install_service(config_path: str = "/etc/pidalmetry/config.toml") -> None:
     print(f"Created {_UNIT_PATH}")
 
     subprocess.run(["systemctl", "daemon-reload"], check=True)
-    subprocess.run(["systemctl", "enable", "pidalmetry"], check=True)
-    subprocess.run(["systemctl", "start", "pidalmetry"], check=True)
+    subprocess.run(["systemctl", "enable", "piedalmetry"], check=True)
+    subprocess.run(["systemctl", "start", "piedalmetry"], check=True)
     print("Service installed and started.")
 
 
 def uninstall_service() -> None:
-    """Stop, disable, and remove the pidalmetry systemd service."""
-    subprocess.run(["systemctl", "stop", "pidalmetry"], check=False)
-    subprocess.run(["systemctl", "disable", "pidalmetry"], check=False)
+    """Stop, disable, and remove the piedalmetry systemd service."""
+    subprocess.run(["systemctl", "stop", "piedalmetry"], check=False)
+    subprocess.run(["systemctl", "disable", "piedalmetry"], check=False)
 
     if _UNIT_PATH.exists():
         _UNIT_PATH.unlink()

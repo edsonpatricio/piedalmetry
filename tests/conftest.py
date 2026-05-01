@@ -1,4 +1,4 @@
-"""Shared test fixtures for Pidalmetry test suite.
+"""Shared test fixtures for Piedalmetry test suite.
 
 References:
   - Bornhall/gt7telemetry: Salsa20 key, IV derivation, packet offsets

@@ -1,4 +1,4 @@
-"""CLI entry point for Pidalmetry.
+"""CLI entry point for Piedalmetry.
 
 Sub-commands: run, mock, discover, install, uninstall, status, start,
 stop, restart, log, troubleshoot.
@@ -11,15 +11,15 @@ import sys
 
 import click
 
-from pidalmetry.config import ConfigError, load_config
+from piedalmetry.config import ConfigError, load_config
 
-DEFAULT_CONFIG = "/etc/pidalmetry/config.toml"
+DEFAULT_CONFIG = "/etc/piedalmetry/config.toml"
 
 
 @click.group()
-@click.version_option(package_name="pidalmetry")
+@click.version_option(package_name="piedalmetry")
 def main() -> None:
-    """Pidalmetry — GT7 brake-pressure-to-motor rumble feedback."""
+    """Piedalmetry — GT7 brake-pressure-to-motor rumble feedback."""
 
 
 @main.command()
@@ -45,7 +45,7 @@ def run(config_path: str, mock: bool, log_level: str | None) -> None:
     if log_level:
         cfg.log_level = log_level
 
-    from pidalmetry.service.runner import Runner
+    from piedalmetry.service.runner import Runner
 
     runner = Runner(cfg)
     runner.run()
@@ -67,7 +67,7 @@ def mock(config_path: str, brake: float | None, sweep: bool, duration: int) -> N
         click.echo(f"ERROR: {e}", err=True)
         sys.exit(1)
 
-    from pidalmetry.service.runner import Runner
+    from piedalmetry.service.runner import Runner
 
     runner = Runner(cfg)
     if sweep:
@@ -83,7 +83,7 @@ def mock(config_path: str, brake: float | None, sweep: bool, duration: int) -> N
 @click.option("--timeout", type=int, default=10, help="Discovery timeout (seconds)")
 def discover(timeout: int) -> None:
     """Discover PlayStation consoles on the network."""
-    from pidalmetry.telemetry.discovery import discover_playstation
+    from piedalmetry.telemetry.discovery import discover_playstation
 
     click.echo(f"Searching for PlayStation (timeout={timeout}s)...")
     ip = discover_playstation(timeout=float(timeout))
@@ -99,16 +99,16 @@ def discover(timeout: int) -> None:
     help="Path to config.toml", type=click.Path(),
 )
 def install(config_path: str) -> None:
-    """Install pidalmetry as a systemd service."""
-    from pidalmetry.service.installer import install_service
+    """Install piedalmetry as a systemd service."""
+    from piedalmetry.service.installer import install_service
 
     install_service(config_path)
 
 
 @main.command()
 def uninstall() -> None:
-    """Remove the pidalmetry systemd service."""
-    from pidalmetry.service.installer import uninstall_service
+    """Remove the piedalmetry systemd service."""
+    from piedalmetry.service.installer import uninstall_service
 
     uninstall_service()
 
@@ -116,25 +116,25 @@ def uninstall() -> None:
 @main.command()
 def status() -> None:
     """Show service status."""
-    subprocess.run(["systemctl", "status", "pidalmetry"], check=False)
+    subprocess.run(["systemctl", "status", "piedalmetry"], check=False)
 
 
 @main.command()
 def start() -> None:
-    """Start the pidalmetry service."""
-    subprocess.run(["sudo", "systemctl", "start", "pidalmetry"], check=False)
+    """Start the piedalmetry service."""
+    subprocess.run(["sudo", "systemctl", "start", "piedalmetry"], check=False)
 
 
 @main.command()
 def stop() -> None:
-    """Stop the pidalmetry service."""
-    subprocess.run(["sudo", "systemctl", "stop", "pidalmetry"], check=False)
+    """Stop the piedalmetry service."""
+    subprocess.run(["sudo", "systemctl", "stop", "piedalmetry"], check=False)
 
 
 @main.command()
 def restart() -> None:
-    """Restart the pidalmetry service."""
-    subprocess.run(["sudo", "systemctl", "restart", "pidalmetry"], check=False)
+    """Restart the piedalmetry service."""
+    subprocess.run(["sudo", "systemctl", "restart", "piedalmetry"], check=False)
 
 
 @main.command(name="log")
@@ -146,8 +146,8 @@ def restart() -> None:
 )
 @click.option("--since", type=str, default=None, help="Show logs since timestamp")
 def log_cmd(lines: int, follow: bool, level: str | None, since: str | None) -> None:
-    """View pidalmetry service logs."""
-    cmd = ["journalctl", "-u", "pidalmetry", f"-n{lines}", "--no-pager"]
+    """View piedalmetry service logs."""
+    cmd = ["journalctl", "-u", "piedalmetry", f"-n{lines}", "--no-pager"]
     if follow:
         cmd.append("-f")
     if since:
@@ -215,7 +215,7 @@ def troubleshoot(config_path: str) -> None:
         checks.append(("Port 33740", "FAIL", "port already in use"))
 
     # Display results
-    click.echo("\n  Pidalmetry Diagnostics")
+    click.echo("\n  Piedalmetry Diagnostics")
     click.echo("  " + "=" * 50)
     _icons = {"PASS": "✅", "WARN": "⚠️", "SKIP": "⏭️"}
     for name, status, detail in checks:

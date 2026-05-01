@@ -3,7 +3,7 @@
 Run the built-in diagnostics first:
 
 ```bash
-pidalmetry troubleshoot
+piedalmetry troubleshoot
 ```
 
 This checks: config file validity, GPIO access, PS5 reachability, and
@@ -18,12 +18,12 @@ port 33740 availability, and reports PASS/FAIL for each.
 | Motor chatters / flutters | Dead-zone too small | Increase `anti_fluctuation.dead_zone` (try 3–5%) |
 | Motor responds slowly to braking | EMA alpha too low | Increase `anti_fluctuation.ema_alpha` (try 0.5–0.7) |
 | `"Config validation error"` on startup | Invalid/missing config key | Read the error message for the exact key; fix value in config.toml |
-| `"Config file not found"` | Wrong config path | Use `--config <path>` or copy example: `sudo cp config.example.toml /etc/pidalmetry/config.toml` |
-| No telemetry data received | PS5 not found / GT7 not running | Verify GT7 is in an active session; run `pidalmetry discover` |
+| `"Config file not found"` | Wrong config path | Use `--config <path>` or copy example: `sudo cp config.example.toml /etc/piedalmetry/config.toml` |
+| No telemetry data received | PS5 not found / GT7 not running | Verify GT7 is in an active session; run `piedalmetry discover` |
 | `"Permission denied"` on GPIO | User not in gpio group | `sudo usermod -aG gpio $USER`, then log out and back in |
 | `"Address already in use"` port 33740 | Another process using the port | `sudo lsof -i :33740` to find and kill the conflicting process |
-| Service won't start on boot | Not installed as service | `sudo pidalmetry install` |
-| Service starts but stops immediately | Crash on startup — check logs | `pidalmetry log --lines 50 --level ERROR` |
+| Service won't start on boot | Not installed as service | `sudo piedalmetry install` |
+| Service starts but stops immediately | Crash on startup — check logs | `piedalmetry log --lines 50 --level ERROR` |
 | High latency (`latency_ms` > 50) | System overloaded or throttling | Check CPU (`top`), check temperature (`vcgencmd measure_temp`) |
 | `"lgpio: cannot open gpiochip"` | lgpio not installed or no permission | `sudo apt-get install python3-lgpio`; add user to `gpio` group |
 | Motor spins wrong direction | OUT1/OUT2 wired in reverse | Swap OUT1 and OUT2 connections at the L298N terminals |
@@ -57,7 +57,7 @@ print('Motor spin test complete')
 
 ```bash
 # Discover PS5 (works on same subnet):
-pidalmetry discover --timeout 10
+piedalmetry discover --timeout 10
 
 # Ping PS5 directly:
 ping -c 3 192.168.1.50
@@ -73,30 +73,30 @@ sudo tcpdump -i eth0 udp port 33740 -c 20
 
 ```bash
 # Show all errors:
-pidalmetry log --level ERROR --lines 50
+piedalmetry log --level ERROR --lines 50
 
 # Show last 100 lines including DEBUG:
-pidalmetry log --lines 100
+piedalmetry log --lines 100
 
 # Watch live:
-pidalmetry log --follow
+piedalmetry log --follow
 ```
 
 ## Service Lifecycle Issues
 
 ```bash
 # Check service status:
-pidalmetry status
+piedalmetry status
 
 # Force restart:
-pidalmetry restart
+piedalmetry restart
 
 # View systemd unit file:
-cat /etc/systemd/system/pidalmetry.service
+cat /etc/systemd/system/piedalmetry.service
 
 # Reload systemd and restart:
 sudo systemctl daemon-reload
-sudo systemctl restart pidalmetry
+sudo systemctl restart piedalmetry
 ```
 
 ## Performance Issues on Pi 2B

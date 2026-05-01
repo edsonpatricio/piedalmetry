@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import pytest
 
-from pidalmetry.motor.filter import BrakeFilter
-from pidalmetry.motor.mapping import map_brake_to_motor
-from pidalmetry.motor.mock import MockMotorController
-from pidalmetry.telemetry.decrypt import decrypt
-from pidalmetry.telemetry.parser import parse
+from piedalmetry.motor.filter import BrakeFilter
+from piedalmetry.motor.mapping import map_brake_to_motor
+from piedalmetry.motor.mock import MockMotorController
+from piedalmetry.telemetry.decrypt import decrypt
+from piedalmetry.telemetry.parser import parse
 from tests.mock.gt7_server import _build_packet
 
 

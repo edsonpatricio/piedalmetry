@@ -3,8 +3,8 @@
 
 from tests.conftest import _build_raw_packet
 
-from pidalmetry.telemetry.decrypt import decrypt
-from pidalmetry.telemetry.parser import parse
+from piedalmetry.telemetry.decrypt import decrypt
+from piedalmetry.telemetry.parser import parse
 
 
 class TestParser:

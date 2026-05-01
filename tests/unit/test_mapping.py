@@ -1,6 +1,6 @@
 """Unit tests for brake-to-motor mapping — T018."""
 
-from pidalmetry.motor.mapping import map_brake_to_motor
+from piedalmetry.motor.mapping import map_brake_to_motor
 
 
 class TestMapping:

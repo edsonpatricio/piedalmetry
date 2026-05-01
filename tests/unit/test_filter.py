@@ -1,6 +1,6 @@
 """Unit tests for anti-fluctuation filter — T019."""
 
-from pidalmetry.motor.filter import BrakeFilter
+from piedalmetry.motor.filter import BrakeFilter
 
 
 class TestBrakeFilter:

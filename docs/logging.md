@@ -1,6 +1,6 @@
 # Logging Guide
 
-Pidalmetry emits structured `key=value` logs at every pipeline stage.
+Piedalmetry emits structured `key=value` logs at every pipeline stage.
 All entries include `ts`, `level`, `module`, and `msg` fields. Extra
 context is appended as additional `key=value` pairs on the same line.
 
@@ -67,38 +67,38 @@ ts=2026-04-27T10:15:31 level=DEBUG module=runner msg="pipeline completed" latenc
 
 ```bash
 # Last 50 lines:
-pidalmetry log
+piedalmetry log
 
 # Last N lines:
-pidalmetry log --lines 100
+piedalmetry log --lines 100
 
 # Follow in real time:
-pidalmetry log --follow
+piedalmetry log --follow
 
 # Filter by level:
-pidalmetry log --level DEBUG
+piedalmetry log --level DEBUG
 
 # Since a timestamp:
-pidalmetry log --since "2026-04-27 10:00:00"
+piedalmetry log --since "2026-04-27 10:00:00"
 ```
 
 ### Using journalctl directly
 
 ```bash
-# All pidalmetry logs:
-journalctl -u pidalmetry --no-pager
+# All piedalmetry logs:
+journalctl -u piedalmetry --no-pager
 
 # Follow:
-journalctl -u pidalmetry -f
+journalctl -u piedalmetry -f
 
 # Last hour:
-journalctl -u pidalmetry --since "1 hour ago"
+journalctl -u piedalmetry --since "1 hour ago"
 
 # Filter by level keyword (key=value format):
-journalctl -u pidalmetry | grep "level=WARNING"
+journalctl -u piedalmetry | grep "level=WARNING"
 
 # Show only brake/motor cycle lines:
-journalctl -u pidalmetry | grep "brake_pct="
+journalctl -u piedalmetry | grep "brake_pct="
 ```
 
 ### When running in foreground
@@ -106,7 +106,7 @@ journalctl -u pidalmetry | grep "brake_pct="
 Logs go to stdout. Use standard shell tools:
 
 ```bash
-uv run python -m pidalmetry run --log-level DEBUG 2>&1 | grep "latency_ms"
+uv run python -m piedalmetry run --log-level DEBUG 2>&1 | grep "latency_ms"
 ```
 
 ## Changing Log Level at Runtime
@@ -115,14 +115,14 @@ The log level is set in the config file and takes effect at next
 service start. For one-off changes, use the CLI flag:
 
 ```bash
-pidalmetry run --log-level DEBUG
+piedalmetry run --log-level DEBUG
 ```
 
 Or restart the service after editing the config:
 
 ```bash
-sudo nano /etc/pidalmetry/config.toml   # set log_level = "DEBUG"
-pidalmetry restart
+sudo nano /etc/piedalmetry/config.toml   # set log_level = "DEBUG"
+piedalmetry restart
 ```
 
 ## Latency Monitoring
@@ -131,7 +131,7 @@ Every telemetry cycle logs `latency_ms` at DEBUG level. To monitor
 pipeline latency:
 
 ```bash
-journalctl -u pidalmetry -f | grep "latency_ms"
+journalctl -u piedalmetry -f | grep "latency_ms"
 # Example output:
 # latency_ms=0.87
 # latency_ms=1.12

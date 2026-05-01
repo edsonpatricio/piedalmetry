@@ -5,7 +5,7 @@ Records all duty cycle changes for test assertions.
 
 from __future__ import annotations
 
-from pidalmetry.motor.controller import MotorControllerBase
+from piedalmetry.motor.controller import MotorControllerBase
 
 
 class MockMotorController(MotorControllerBase):

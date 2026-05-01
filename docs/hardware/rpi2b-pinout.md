@@ -34,7 +34,7 @@ GPIO26 (37) (38) GPIO20
    GND (39) (40) GPIO21
 ```
 
-## Pins Used by Pidalmetry
+## Pins Used by Piedalmetry
 
 | Physical Pin | BCM | Function | L298N |
 |-------------|-----|----------|-------|
@@ -46,7 +46,7 @@ GPIO26 (37) (38) GPIO20
 
 ## BCM vs Physical Pin Numbering
 
-Pidalmetry uses **BCM (Broadcom) numbering** in the config file:
+Piedalmetry uses **BCM (Broadcom) numbering** in the config file:
 
 ```toml
 [motor]
@@ -72,7 +72,7 @@ The L298N accepts 3.3V logic on IN1/IN2/ENA. No level shifter needed.
 
 ## DietPi GPIO Access
 
-On DietPi, the user running pidalmetry must have access to `/dev/gpiochip0`.
+On DietPi, the user running piedalmetry must have access to `/dev/gpiochip0`.
 The `dietpi` user is typically in the `gpio` group. Verify with:
 
 ```bash

@@ -1,14 +1,14 @@
 # Configuration Reference
 
-Pidalmetry is configured via a TOML file, by default at
-`/etc/pidalmetry/config.toml`. Copy `config.example.toml` from the
+Piedalmetry is configured via a TOML file, by default at
+`/etc/piedalmetry/config.toml`. Copy `config.example.toml` from the
 repository root to get started.
 
 ## File Location
 
 | Context | Path |
 |---------|------|
-| System service (default) | `/etc/pidalmetry/config.toml` |
+| System service (default) | `/etc/piedalmetry/config.toml` |
 | Development / custom | Pass `--config <path>` to any CLI command |
 
 ## Validation
@@ -39,7 +39,7 @@ log_target = "stdout"
 
 `log_target = "journald"` routes logs to systemd journal (recommended
 when running as a service). `log_target = "file"` writes to
-`/var/log/pidalmetry.log`.
+`/var/log/piedalmetry.log`.
 
 ### `[motor]`
 
@@ -83,7 +83,7 @@ of a car on the verge of skidding. Must be greater than `min_brake_pressure`.
 Set to `0` to disable (default).
 
 See [docs/hardware/rpi2b-pinout.md](hardware/rpi2b-pinout.md) for BCM
-pin numbering. Defaults match the standard Pidalmetry wiring.
+pin numbering. Defaults match the standard Piedalmetry wiring.
 
 ### `[anti_fluctuation]`
 
@@ -132,11 +132,11 @@ the IP is cleared and discovery re-runs.
 
 ```bash
 # Check for validation errors:
-uv run python -m pidalmetry run --config /etc/pidalmetry/config.toml --mock
+uv run python -m piedalmetry run --config /etc/piedalmetry/config.toml --mock
 # If config is valid, mock mode starts without error
 
 # Run diagnostics:
-pidalmetry troubleshoot
+piedalmetry troubleshoot
 ```
 
 ## CLI Overrides
@@ -144,8 +144,8 @@ pidalmetry troubleshoot
 CLI flags override config file values for the duration of the command:
 
 ```bash
-pidalmetry run --log-level DEBUG    # Override log_level
-pidalmetry run --mock               # Override mock_mode
+piedalmetry run --log-level DEBUG    # Override log_level
+piedalmetry run --mock               # Override mock_mode
 ```
 
 The config file is the canonical source of truth for all other settings.

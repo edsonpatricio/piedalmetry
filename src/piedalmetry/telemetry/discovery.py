@@ -12,7 +12,7 @@ import logging
 import socket
 import time
 
-_log = logging.getLogger("pidalmetry.telemetry.discovery")
+_log = logging.getLogger("piedalmetry.telemetry.discovery")
 
 SEND_PORT = 33739
 RECV_PORT = 33740

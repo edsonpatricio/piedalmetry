@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from pidalmetry.config import ConfigError, load_config
+from piedalmetry.config import ConfigError, load_config
 
 
 def _write_toml(path: Path, content: str) -> None:

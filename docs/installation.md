@@ -43,19 +43,19 @@ sudo apt-get install -y python3-lgpio
 
 ## Step 1 — Clone the Repository
 
-The repository is mirrored on the Pi at `/home/dietpi/dev/pidalmetry`.
+The repository is mirrored on the Pi at `/home/dietpi/dev/piedalmetry`.
 If not yet present:
 
 ```bash
 cd ~/dev
-git clone <repo-url> pidalmetry
-cd pidalmetry
+git clone <repo-url> piedalmetry
+cd piedalmetry
 ```
 
 ## Step 2 — Install Dependencies
 
 ```bash
-cd ~/dev/pidalmetry
+cd ~/dev/piedalmetry
 uv sync
 ```
 
@@ -70,9 +70,9 @@ uv run python -c "import Crypto; import click; print('deps OK')"
 ## Step 3 — Create the Configuration File
 
 ```bash
-sudo mkdir -p /etc/pidalmetry
-sudo cp config.example.toml /etc/pidalmetry/config.toml
-sudo nano /etc/pidalmetry/config.toml
+sudo mkdir -p /etc/piedalmetry
+sudo cp config.example.toml /etc/piedalmetry/config.toml
+sudo nano /etc/piedalmetry/config.toml
 ```
 
 **Required edits**:
@@ -89,15 +89,15 @@ See [docs/configuration.md](configuration.md) for all options.
 Verify the installation without requiring a PlayStation or motor:
 
 ```bash
-cd ~/dev/pidalmetry
-uv run python -m pidalmetry run --mock --log-level DEBUG
+cd ~/dev/piedalmetry
+uv run python -m piedalmetry run --mock --log-level DEBUG
 # Ctrl+C to stop
 ```
 
 Verify a sweep test:
 
 ```bash
-uv run python -m pidalmetry mock --sweep --duration 5
+uv run python -m piedalmetry mock --sweep --duration 5
 # Should log motor_pct values sweeping 0→100→0 without errors
 ```
 
@@ -106,8 +106,8 @@ uv run python -m pidalmetry mock --sweep --duration 5
 With the motor wired and a GT7 session active:
 
 ```bash
-cd ~/dev/pidalmetry
-uv run python -m pidalmetry run --config /etc/pidalmetry/config.toml --log-level DEBUG
+cd ~/dev/piedalmetry
+uv run python -m piedalmetry run --config /etc/piedalmetry/config.toml --log-level DEBUG
 # Brake in GT7 → motor should vibrate proportionally
 # Ctrl+C to stop
 ```
@@ -115,18 +115,18 @@ uv run python -m pidalmetry run --config /etc/pidalmetry/config.toml --log-level
 ## Step 6 — Install as a systemd Service
 
 ```bash
-cd ~/dev/pidalmetry
-sudo uv run python -m pidalmetry install --config /etc/pidalmetry/config.toml
+cd ~/dev/piedalmetry
+sudo uv run python -m piedalmetry install --config /etc/piedalmetry/config.toml
 ```
 
-This installs `/etc/systemd/system/pidalmetry.service` and enables it
+This installs `/etc/systemd/system/piedalmetry.service` and enables it
 to start on boot.
 
 Verify:
 
 ```bash
-pidalmetry status    # Should show: active (running)
-pidalmetry log --lines 10
+piedalmetry status    # Should show: active (running)
+piedalmetry log --lines 10
 ```
 
 ## Step 7 — Verify Service Survives Reboot
@@ -135,24 +135,24 @@ pidalmetry log --lines 10
 sudo reboot
 # After reboot:
 ssh dietpi@<pi-ip>
-pidalmetry status    # Should show: active (running)
+piedalmetry status    # Should show: active (running)
 ```
 
 ## Uninstall
 
 ```bash
-sudo pidalmetry uninstall
+sudo piedalmetry uninstall
 ```
 
 This stops the service, disables it, and removes the unit file.
-The config file at `/etc/pidalmetry/config.toml` is preserved.
+The config file at `/etc/piedalmetry/config.toml` is preserved.
 
 ## Troubleshooting Installation
 
 Run the built-in diagnostics:
 
 ```bash
-pidalmetry troubleshoot
+piedalmetry troubleshoot
 ```
 
 See [docs/troubleshooting.md](troubleshooting.md) for common failure modes.

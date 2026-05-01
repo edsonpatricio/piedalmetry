@@ -85,7 +85,7 @@ graph LR
 
 ## Signal Logic
 
-Motor direction is set by IN1/IN2. Pidalmetry always drives forward
+Motor direction is set by IN1/IN2. Piedalmetry always drives forward
 (IN1=HIGH, IN2=LOW). Reversing is not implemented.
 
 | IN1 | IN2 | Motor state |
