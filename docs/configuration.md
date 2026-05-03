@@ -17,7 +17,7 @@ Config is validated at startup. Invalid values produce a clear error:
 
 ```text
 Config validation failed:
-  - Invalid value for motor.min_brake_pressure: 150 (valid: 0-99)
+  - Invalid value for brake.brake_min_pressure: 150 (valid: 0-99)
 ```
 
 ## Sections
@@ -41,46 +41,71 @@ log_target = "stdout"
 when running as a service). `log_target = "file"` writes to
 `/var/log/piedalmetry.log`.
 
-### `[motor]`
+### `[brake]`
 
 | Key | Type | Default | Valid | Description |
 |-----|------|---------|-------|-------------|
-| `gpio_ena` | int | `18` | 0–27 | BCM pin for ENA (PWM speed) |
-| `gpio_in1` | int | `23` | 0–27 | BCM pin for IN1 (direction) |
-| `gpio_in2` | int | `24` | 0–27 | BCM pin for IN2 (direction) |
-| `pwm_frequency` | int | `1000` | 50–25000 | PWM frequency in Hz |
-| `min_brake_pressure` | int | `30` | 0–99 | Brake % below which motor is off |
-| `min_motor_strength` | int | `50` | 1–99 | Motor % when brake = `min_brake_pressure` |
-| `min_car_speed` | int | `5` | 0–500 | Car speed (km/h) below which motor is off |
-| `response_exponent` | float | `1.0` | 0.1–10.0 | Response curve shape (1.0 = linear) |
-| `top_limit_pattern` | int | `0` | 0 or (`min_brake_pressure`+1)–100 | Brake % above which motor pulses; `0` = disabled |
+| `brake_gpio_ena` | int | `18` | 0–27 | BCM pin for ENA (PWM speed) |
+| `brake_gpio_in1` | int | `23` | 0–27 | BCM pin for IN1 (direction) |
+| `brake_gpio_in2` | int | `24` | 0–27 | BCM pin for IN2 (direction) |
+| `brake_pwm_frequency` | int | `1000` | 50–25000 | PWM carrier frequency in Hz |
+| `brake_min_pressure` | int | `30` | 0–99 | Brake % below which motor is off |
+| `brake_min_strength` | int | `50` | 1–99 | Motor duty % at `brake_min_pressure`; ramps linearly to 100% |
+| `brake_min_car_speed` | int | `5` | 0–500 | Car speed (km/h) below which motor is off |
+| `brake_min_pulse_freq` | float | `6.0` | 0.1–20.0 | Pulse frequency (Hz) at `brake_min_pressure` |
+| `brake_max_pulse_freq` | float | `12.0` | 0.1–20.0 | Pulse frequency (Hz) at `brake_top_limit_pattern` |
+| `brake_feedback_exponent` | float | `2.0` | 0.1–10.0 | Response curve exponent for the frequency ramp |
+| `brake_top_limit_pattern` | int | `0` | 0 or (`brake_min_pressure`+1)–100 | Brake % above which motor runs continuously; `0` = disabled |
 
 ```toml
-[motor]
-gpio_ena = 18
-gpio_in1 = 23
-gpio_in2 = 24
-pwm_frequency = 1000
-min_brake_pressure = 30
-min_motor_strength = 50
-min_car_speed = 5
-response_exponent = 2.0
-top_limit_pattern = 0
+[brake]
+brake_gpio_ena = 18
+brake_gpio_in1 = 23
+brake_gpio_in2 = 24
+brake_pwm_frequency = 1000
+brake_min_pressure = 30
+brake_min_strength = 50
+brake_min_car_speed = 5
+brake_min_pulse_freq = 6.0
+brake_max_pulse_freq = 12.0
+brake_feedback_exponent = 2.0
+brake_top_limit_pattern = 0
 ```
 
-**Mapping curve**: Scales from `(min_brake_pressure → min_motor_strength)`
-to `(100% → 100%)`. Below `min_brake_pressure` the motor is off.
+**Three feedback zones**:
 
-**`response_exponent`**: Controls the shape of the brake-to-motor curve.
-- `1.0` — linear (proportional)
-- `> 1.0` — power curve: quiet under light braking, aggressive under heavy
-- `2.0` — quadratic; recommended for realistic haptic rumble feel
+| Brake pressure | Motor behaviour |
+|----------------|-----------------|
+| < `brake_min_pressure` | Off |
+| `brake_min_pressure` → `brake_top_limit_pattern` | Pulses; duty ramps linearly `brake_min_strength` → 100%; frequency ramps `brake_min_pulse_freq` → `brake_max_pulse_freq` |
+| ≥ `brake_top_limit_pattern` (and > 0) | Continuous 100% — solid resistance wall |
 
-**`top_limit_pattern`**: When set to a non-zero value, the motor switches
-from continuous rotation to a rapid burst pattern at/above that brake
-percentage — 100% duty in 80 ms on/off cycles (~6 Hz), simulating the feel
-of a car on the verge of skidding. Must be greater than `min_brake_pressure`.
-Set to `0` to disable (default).
+The two dimensions in the pulsed zone are **independent**:
+- **Strength** (ON-phase duty): always linear — `brake_feedback_exponent` has no effect on it
+- **Frequency**: shaped by `brake_feedback_exponent`
+
+**`brake_min_strength`**: Motor duty during the ON phase at `brake_min_pressure`.
+Ramps linearly to 100% at `brake_top_limit_pattern`. Set lower (e.g. `50`) for a
+subtle entry feel; set higher (e.g. `85`) for strong feedback from the first brake
+input.
+
+**`brake_min_pulse_freq` / `brake_max_pulse_freq`**: Set the pulse rate
+range across the braking zone. Frequency is interpolated linearly in Hz
+space, giving uniform perceptual steps. Increasing the gap between the two
+values makes pressure changes more discriminable.
+
+**`brake_feedback_exponent`**: Bends the frequency ramp without changing its
+endpoints.
+- `1.0` — linear (equal brake steps → equal frequency steps)
+- `> 1.0` — slow start / fast end: subtle response at light braking,
+  aggressive near the limit (recommended: `2.0`–`3.0`)
+- `< 1.0` — fast start / slow end: immediate response, compressed at high
+  pressure
+
+**`brake_top_limit_pattern`**: When non-zero, the motor switches from
+frequency-coded pulses to a solid 100% duty above this threshold — simulating
+the feel of a car at its braking limit. Must be greater than
+`brake_min_pressure`. Set to `0` to disable (default).
 
 See [docs/hardware/rpi2b-pinout.md](hardware/rpi2b-pinout.md) for BCM
 pin numbering. Defaults match the standard Piedalmetry wiring.

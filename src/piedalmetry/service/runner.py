@@ -12,14 +12,12 @@ import time
 from collections import deque
 from typing import Any
 
-# Half-period for top_limit_pattern pulse: 80 ms on / 80 ms off ≈ 6 Hz ABS-like rumble
-_PULSE_HALF_PERIOD_S = 0.08
-
 from piedalmetry.config import AppConfig
+from piedalmetry.led.controller import LedController, LedControllerBase, MockLedController
 from piedalmetry.logging import LatencyTracker, setup_logging
 from piedalmetry.motor.controller import MotorController, MotorControllerBase
 from piedalmetry.motor.filter import BrakeFilter
-from piedalmetry.motor.mapping import map_brake_to_motor
+from piedalmetry.motor.mapping import map_brake_to_pulse_half_period
 from piedalmetry.motor.mock import MockMotorController
 from piedalmetry.telemetry.listener import TelemetryListener
 from piedalmetry.telemetry.parser import TelemetryPacket
@@ -43,16 +41,19 @@ class Runner:
 
         # Select motor controller
         self._motor: MotorControllerBase
+        self._led: LedControllerBase
         if config.mock_mode:
             self._motor = MockMotorController()
+            self._led = MockLedController()
             self._logger.info("Motor controller: MOCK mode")
         else:
             self._motor = MotorController(
-                gpio_ena=config.motor.gpio_ena,
-                gpio_in1=config.motor.gpio_in1,
-                gpio_in2=config.motor.gpio_in2,
-                pwm_frequency=config.motor.pwm_frequency,
+                gpio_ena=config.brake.gpio_ena,
+                gpio_in1=config.brake.gpio_in1,
+                gpio_in2=config.brake.gpio_in2,
+                pwm_frequency=config.brake.pwm_frequency,
             )
+            self._led = LedController()
 
     def _on_packet(self, pkt: TelemetryPacket) -> None:
         """Callback from listener thread — enqueue latest packet."""
@@ -73,24 +74,26 @@ class Runner:
 
         ps_ip = self._config.playstation.ip
 
-        m = self._config.motor
+        b = self._config.brake
         af = self._config.anti_fluctuation
         self._logger.info(
             "Configuration",
             extra={"kv": {
                 "mock_mode": self._config.mock_mode,
-                "gpio_ena": m.gpio_ena,
-                "gpio_in1": m.gpio_in1,
-                "gpio_in2": m.gpio_in2,
-                "pwm_frequency": m.pwm_frequency,
-                "min_brake_pressure": m.min_brake_pressure,
-                "min_motor_strength": m.min_motor_strength,
-                "min_car_speed": m.min_car_speed,
-                "response_exponent": m.response_exponent,
-                "top_limit_pattern": m.top_limit_pattern if m.top_limit_pattern > 0 else "disabled",
-                "dead_zone": af.dead_zone,
-                "ema_alpha": af.ema_alpha,
                 "ps_label": self._config.playstation.label or "(none)",
+                "brake_gpio_ena": b.gpio_ena,
+                "brake_gpio_in1": b.gpio_in1,
+                "brake_gpio_in2": b.gpio_in2,
+                "brake_pwm_frequency": b.pwm_frequency,
+                "brake_min_pressure": b.min_pressure,
+                "brake_min_strength": b.min_strength,
+                "brake_min_car_speed": b.min_car_speed,
+                "brake_min_pulse_freq": b.min_pulse_freq,
+                "brake_max_pulse_freq": b.max_pulse_freq,
+                "brake_feedback_exponent": b.feedback_exponent,
+                "brake_top_limit_pattern": b.top_limit_pattern if b.top_limit_pattern > 0 else "disabled",
+                "af_dead_zone": af.dead_zone,
+                "af_ema_alpha": af.ema_alpha,
             }},
         )
 
@@ -107,10 +110,20 @@ class Runner:
             from piedalmetry.config import write_back_ip
             write_back_ip(self._config, ip)
 
+        def _on_connected() -> None:
+            self._led.on()
+            self._logger.info("GT7 telemetry connected")
+
+        def _on_disconnected() -> None:
+            self._led.off()
+            self._logger.warning("GT7 telemetry connection lost")
+
         listener = TelemetryListener(
             ps_ip,
             self._on_packet,
             on_ip_discovered=_on_ip_discovered,
+            on_connected=_on_connected,
+            on_disconnected=_on_disconnected,
         )
         listener.start()
 
@@ -126,7 +139,7 @@ class Runner:
                 pkt = self._packet_queue.popleft()
 
                 # Speed gate
-                if pkt.car_speed_kph < self._config.motor.min_car_speed:
+                if pkt.car_speed_kph < self._config.brake.min_car_speed:
                     self._motor.stop()
                     self._filter.reset()
                     continue
@@ -134,23 +147,35 @@ class Runner:
                 # Filter brake pressure
                 filtered = self._filter.filter(pkt.brake_pressure)
 
-                # Top-limit pattern: pulse at full vibration at/above threshold
-                top_limit = self._config.motor.top_limit_pattern
-                if top_limit > 0 and filtered >= top_limit:
-                    now = time.monotonic()
-                    if now - self._pulse_last_toggle >= _PULSE_HALF_PERIOD_S:
-                        self._pulse_on = not self._pulse_on
-                        self._pulse_last_toggle = now
-                    duty = 100.0 if self._pulse_on else 0.0
-                else:
+                min_brake = self._config.brake.min_pressure
+                top_limit = self._config.brake.top_limit_pattern
+
+                if filtered < min_brake:
                     self._pulse_on = True
                     self._pulse_last_toggle = 0.0
-                    duty = map_brake_to_motor(
-                        filtered,
-                        self._config.motor.min_brake_pressure,
-                        self._config.motor.min_motor_strength,
-                        exponent=self._config.motor.response_exponent,
+                    duty = 0.0
+                elif top_limit > 0 and filtered >= top_limit:
+                    # Continuous 100% — solid resistance wall above threshold
+                    self._pulse_on = True
+                    duty = 100.0
+                else:
+                    # Pulsed zone: frequency shaped by exponent, strength linear
+                    half_period = map_brake_to_pulse_half_period(
+                        filtered, min_brake, top_limit,
+                        self._config.brake.min_pulse_freq,
+                        self._config.brake.max_pulse_freq,
+                        exponent=self._config.brake.feedback_exponent,
                     )
+                    effective_top = top_limit if top_limit > 0 else 100
+                    span = effective_top - min_brake
+                    t_linear = max(0.0, min(1.0, (filtered - min_brake) / span)) if span > 0 else 1.0
+                    min_str = self._config.brake.min_strength
+                    strength = min_str + t_linear * (100.0 - min_str)
+                    now = time.monotonic()
+                    if now - self._pulse_last_toggle >= half_period:
+                        self._pulse_on = not self._pulse_on
+                        self._pulse_last_toggle = now
+                    duty = strength if self._pulse_on else 0.0
 
                 self._motor.set_duty_cycle(duty)
                 self._tracker.stop_and_log()
@@ -166,6 +191,8 @@ class Runner:
                 )
         finally:
             listener.stop()
+            self._led.off()
+            self._led.cleanup()
             self._motor.cleanup()
             self._logger.info("Pipeline stopped")
 
@@ -189,12 +216,7 @@ class Runner:
                 brake = max(0.0, min(100.0, brake))
 
                 filtered = self._filter.filter(brake)
-                duty = map_brake_to_motor(
-                    filtered,
-                    self._config.motor.min_brake_pressure,
-                    self._config.motor.min_motor_strength,
-                    exponent=self._config.motor.response_exponent,
-                )
+                duty = 100.0 if filtered >= self._config.brake.min_pressure else 0.0
                 self._motor.set_duty_cycle(duty)
                 self._logger.debug(
                     "Sweep",
@@ -212,12 +234,7 @@ class Runner:
     def run_fixed_brake(self, brake_pct: float, duration: float = 5.0) -> None:
         """Run motor at a fixed brake percentage for testing."""
         filtered = self._filter.filter(brake_pct)
-        duty = map_brake_to_motor(
-            filtered,
-            self._config.motor.min_brake_pressure,
-            self._config.motor.min_motor_strength,
-            exponent=self._config.motor.response_exponent,
-        )
+        duty = 100.0 if filtered >= self._config.brake.min_pressure else 0.0
         self._logger.info(
             "Fixed brake test",
             extra={"kv": {

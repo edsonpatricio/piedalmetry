@@ -42,6 +42,10 @@ class TelemetryListener:
         ps_ip: PlayStation IP address (empty string = auto-discover).
         on_packet: Callback invoked with each parsed TelemetryPacket.
         on_ip_discovered: Optional callback when IP is discovered/updated.
+        on_connected: Optional callback fired when the first valid packet
+            arrives after a disconnected state (connection established).
+        on_disconnected: Optional callback fired when 3 consecutive
+            failures trigger re-discovery (connection lost).
         discovery_timeout: Seconds to wait for discovery.
     """
 
@@ -50,6 +54,8 @@ class TelemetryListener:
         ps_ip: str,
         on_packet: Callable[[TelemetryPacket], None],
         on_ip_discovered: Callable[[str], None] | None = None,
+        on_connected: Callable[[], None] | None = None,
+        on_disconnected: Callable[[], None] | None = None,
         discovery_timeout: float = 10.0,
     ) -> None:
         self._discovery = DiscoveryManager(
@@ -59,10 +65,13 @@ class TelemetryListener:
         )
         self._on_packet = on_packet
         self._on_ip_discovered = on_ip_discovered
+        self._on_connected = on_connected
+        self._on_disconnected = on_disconnected
         self._running = False
         self._thread: threading.Thread | None = None
         self._last_pkt_id = 0
         self._pkt_count = 0
+        self._connected = False
 
     @property
     def current_ip(self) -> str:
@@ -136,6 +145,10 @@ class TelemetryListener:
 
                 if pkt.packet_id > self._last_pkt_id:
                     self._last_pkt_id = pkt.packet_id
+                    if not self._connected:
+                        self._connected = True
+                        if self._on_connected:
+                            self._on_connected()
                     self._on_packet(pkt)
 
                 if self._pkt_count >= _HEARTBEAT_INTERVAL:
@@ -149,6 +162,10 @@ class TelemetryListener:
                     _log.warning(
                         "3 consecutive failures — re-discovering PlayStation"
                     )
+                    if self._connected:
+                        self._connected = False
+                        if self._on_disconnected:
+                            self._on_disconnected()
                     ip = self._discovery.run_discovery()
                     if ip and self._on_ip_discovered:
                         self._on_ip_discovered(ip)

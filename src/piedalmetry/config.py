@@ -24,17 +24,19 @@ class PlayStationConfig:
 
 
 @dataclass
-class MotorConfig:
-    """Motor hardware and mapping configuration."""
+class BrakeConfig:
+    """Brake feedback hardware and mapping configuration."""
 
     gpio_ena: int = 18
     gpio_in1: int = 23
     gpio_in2: int = 24
     pwm_frequency: int = 1000
-    min_brake_pressure: int = 30
-    min_motor_strength: int = 50
+    min_pressure: int = 30
+    min_strength: int = 50
     min_car_speed: int = 5
-    response_exponent: float = 1.0
+    min_pulse_freq: float = 6.0
+    max_pulse_freq: float = 12.0
+    feedback_exponent: float = 2.0
     top_limit_pattern: int = 0
 
 
@@ -53,7 +55,7 @@ class AppConfig:
     mock_mode: bool = False
     log_level: str = "INFO"
     log_target: str = "stdout"
-    motor: MotorConfig = field(default_factory=MotorConfig)
+    brake: BrakeConfig = field(default_factory=BrakeConfig)
     anti_fluctuation: AntiFluctuationConfig = field(
         default_factory=AntiFluctuationConfig
     )
@@ -66,15 +68,17 @@ class ConfigError(Exception):
 
 
 _VALIDATORS: dict[str, tuple[type, Any, Any]] = {
-    "motor.gpio_ena": (int, 0, 27),
-    "motor.gpio_in1": (int, 0, 27),
-    "motor.gpio_in2": (int, 0, 27),
-    "motor.pwm_frequency": (int, 50, 25000),
-    "motor.min_brake_pressure": (int, 0, 99),
-    "motor.min_motor_strength": (int, 1, 99),
-    "motor.min_car_speed": (int, 0, 500),
-    "motor.response_exponent": (float, 0.1, 10.0),
-    "motor.top_limit_pattern": (int, 0, 100),
+    "brake.brake_gpio_ena": (int, 0, 27),
+    "brake.brake_gpio_in1": (int, 0, 27),
+    "brake.brake_gpio_in2": (int, 0, 27),
+    "brake.brake_pwm_frequency": (int, 50, 25000),
+    "brake.brake_min_pressure": (int, 0, 99),
+    "brake.brake_min_strength": (int, 1, 99),
+    "brake.brake_min_car_speed": (int, 0, 500),
+    "brake.brake_min_pulse_freq": (float, 0.1, 20.0),
+    "brake.brake_max_pulse_freq": (float, 0.1, 20.0),
+    "brake.brake_feedback_exponent": (float, 0.1, 10.0),
+    "brake.brake_top_limit_pattern": (int, 0, 100),
     "anti_fluctuation.dead_zone": (float, 0.0, 50.0),
     "anti_fluctuation.ema_alpha": (float, 0.0, 1.0),
 }
@@ -129,17 +133,17 @@ def _validate(data: dict[str, Any]) -> list[str]:
                 f"Invalid value for {key}: {val} (valid: {min_val}-{max_val})"
             )
 
-    top_limit = _get_nested(data, "motor.top_limit_pattern")
-    min_brake = _get_nested(data, "motor.min_brake_pressure")
+    top_limit = _get_nested(data, "brake.brake_top_limit_pattern")
+    min_pressure = _get_nested(data, "brake.brake_min_pressure")
     if (
         isinstance(top_limit, (int, float))
         and top_limit > 0
-        and isinstance(min_brake, (int, float))
-        and top_limit <= min_brake
+        and isinstance(min_pressure, (int, float))
+        and top_limit <= min_pressure
     ):
         errors.append(
-            f"Invalid value for motor.top_limit_pattern: {top_limit} "
-            f"(must be greater than motor.min_brake_pressure={min_brake})"
+            f"Invalid value for brake.brake_top_limit_pattern: {top_limit} "
+            f"(must be greater than brake.brake_min_pressure={min_pressure})"
         )
 
     return errors
@@ -168,7 +172,7 @@ def load_config(path: str | Path) -> AppConfig:
         raise ConfigError(msg)
 
     general = data.get("general", {})
-    motor_data = data.get("motor", {})
+    brake_data = data.get("brake", {})
     af_data = data.get("anti_fluctuation", {})
     ps_data = data.get("playstation", {})
 
@@ -176,16 +180,18 @@ def load_config(path: str | Path) -> AppConfig:
         mock_mode=general.get("mock_mode", False),
         log_level=general.get("log_level", "INFO"),
         log_target=general.get("log_target", "stdout"),
-        motor=MotorConfig(
-            gpio_ena=motor_data.get("gpio_ena", 18),
-            gpio_in1=motor_data.get("gpio_in1", 23),
-            gpio_in2=motor_data.get("gpio_in2", 24),
-            pwm_frequency=motor_data.get("pwm_frequency", 1000),
-            min_brake_pressure=motor_data.get("min_brake_pressure", 30),
-            min_motor_strength=motor_data.get("min_motor_strength", 50),
-            min_car_speed=motor_data.get("min_car_speed", 5),
-            response_exponent=float(motor_data.get("response_exponent", 1.0)),
-            top_limit_pattern=int(motor_data.get("top_limit_pattern", 0)),
+        brake=BrakeConfig(
+            gpio_ena=brake_data.get("brake_gpio_ena", 18),
+            gpio_in1=brake_data.get("brake_gpio_in1", 23),
+            gpio_in2=brake_data.get("brake_gpio_in2", 24),
+            pwm_frequency=brake_data.get("brake_pwm_frequency", 1000),
+            min_pressure=brake_data.get("brake_min_pressure", 30),
+            min_strength=brake_data.get("brake_min_strength", 70),
+            min_car_speed=brake_data.get("brake_min_car_speed", 5),
+            min_pulse_freq=float(brake_data.get("brake_min_pulse_freq", 6.0)),
+            max_pulse_freq=float(brake_data.get("brake_max_pulse_freq", 12.0)),
+            feedback_exponent=float(brake_data.get("brake_feedback_exponent", 2.0)),
+            top_limit_pattern=int(brake_data.get("brake_top_limit_pattern", 0)),
         ),
         anti_fluctuation=AntiFluctuationConfig(
             dead_zone=af_data.get("dead_zone", 2.0),

@@ -16,51 +16,59 @@ log_level = "INFO"
 # Type: string | Default: "stdout"
 log_target = "stdout"
 
-[motor]
+[brake]
 # BCM GPIO pin number for ENA (PWM speed control)
 # Type: int | Default: 18 | Valid: 0-27
-gpio_ena = 18  # physical pin 12
+brake_gpio_ena = 18  # physical pin 12
 
 # BCM GPIO pin number for IN1 (direction control)
 # Type: int | Default: 23 | Valid: 0-27
-gpio_in1 = 23  # physical pin 16
+brake_gpio_in1 = 23  # physical pin 16
 
 # BCM GPIO pin number for IN2 (direction control)
 # Type: int | Default: 24 | Valid: 0-27
-gpio_in2 = 24  # physical pin 18
+brake_gpio_in2 = 24  # physical pin 18
 
 # PWM frequency in Hz
 # Type: int | Default: 100 | Valid: 50-25000
-pwm_frequency = 100
+brake_pwm_frequency = 100
 
 # Minimum brake pressure (%) to activate the motor
 # Below this value the motor stays off.
 # Type: int | Default: 20 | Valid: 0-99
-min_brake_pressure = 20
+brake_min_pressure = 20
 
-# Minimum motor strength (%) when brake is at min_brake_pressure
-# At max_brake_pressure the motor reaches 100%.
-# Type: int | Default: 40 | Valid: 1-99
-min_motor_strength = 40
+# Minimum motor duty cycle (%) at brake_min_pressure.
+# Ramps linearly to 100% at brake_top_limit_pattern.
+# Independent of brake_feedback_exponent (which only shapes frequency).
+# Type: int | Default: 50 | Valid: 1-99
+brake_min_strength = 50
 
 # Minimum car speed (km/h) to activate the motor
 # Motor stays off below this speed (e.g. stationary in pit).
-# Type: int | Default: 30 | Valid: 0-500
-min_car_speed = 30
+# Type: int | Default: 0 | Valid: 0-500
+brake_min_car_speed = 0
 
-# Response curve exponent. Controls how brake pressure maps to motor strength.
-#   1.0 = linear (proportional)
-#   1.5 = mild power curve (gentle start, stronger finish)
-#   2.0 = quadratic (recommended — quiet under light braking, strong under heavy)
-# Type: float | Default: 10.0 | Valid: 0.1-10.0
-response_exponent = 10.0
+# Pulse frequency range (Hz) across the braking zone.
+# Frequency ramps from brake_min_pulse_freq at brake_min_pressure
+# to brake_max_pulse_freq at brake_top_limit_pattern. Above the threshold
+# the motor runs continuously at 100% (no pulsing).
+# Type: float | Valid: 0.1-20.0
+brake_min_pulse_freq = 3.0   # Hz at brake_min_pressure       | Default: 6.0
+brake_max_pulse_freq = 14.0  # Hz at brake_top_limit_pattern  | Default: 12.0
 
-# Top-limit pattern: brake pressure (%) above which the motor pulses in rapid
-# bursts at full power instead of continuous rotation, simulating the feel of
-# a car on the verge of skidding (ABS-like rumble, ~6 Hz).
-# Must be greater than min_brake_pressure. Set to 0 to disable.
-# Type: int | Default: 98 | Valid: 0, or (min_brake_pressure+1)-100
-top_limit_pattern = 98
+# Response curve exponent applied to the pulse frequency ramp.
+# Controls how quickly the frequency rises as brake pressure increases.
+#   1.0 = linear (equal brake steps → equal frequency steps)
+#   >1.0 = slow start / fast end (subtle at light braking, aggressive near limit)
+# Type: float | Default: 2.0 | Valid: 0.1-10.0
+brake_feedback_exponent = 3.0
+
+# Brake pressure (%) above which the motor runs continuously at 100% power.
+# Below this threshold the motor pulses at full power with increasing frequency.
+# Must be greater than brake_min_pressure. Set to 0 to disable.
+# Type: int | Default: 98 | Valid: 0, or (brake_min_pressure+1)-100
+brake_top_limit_pattern = 98
 
 [anti_fluctuation]
 # Dead-zone threshold (%) — changes smaller than this are ignored

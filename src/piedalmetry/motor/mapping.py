@@ -1,12 +1,8 @@
-"""Brake-pressure to motor-duty-cycle mapping with configurable response curve.
+"""Brake-pressure to motor-duty-cycle mapping.
 
-The mapping runs from (min_brake → min_motor) to (100% → 100%).
-Below min_brake the motor is off (0%).
-
-The response exponent controls the curve shape:
-  exponent = 1.0  → linear (proportional)
-  exponent > 1.0  → power curve (gentle at light braking, aggressive at heavy)
-  exponent = 2.0  → quadratic; recommended for realistic haptic rumble feel
+Two functions:
+  map_brake_to_motor        — maps brake % to ON-power % (linear or power curve)
+  map_brake_to_pulse_half_period — maps brake % to pulse half-period (seconds)
 """
 
 from __future__ import annotations
@@ -50,3 +46,40 @@ def map_brake_to_motor(
 
     duty = min_motor + t * (100.0 - min_motor)
     return max(0.0, min(100.0, duty))
+
+
+def map_brake_to_pulse_half_period(
+    brake_pct: float,
+    min_brake: int,
+    top_limit: int,
+    freq_low: float,
+    freq_high: float,
+    exponent: float = 1.0,
+) -> float:
+    """Map brake pressure to pulse half-period (seconds).
+
+    Interpolates frequency from freq_low at min_brake to freq_high at top_limit,
+    then converts to half-period.  The exponent bends the ramp curve:
+      1.0 = linear, >1 = slow start / fast end, <1 = fast start / slow end.
+    When top_limit == 0 (continuous zone disabled), 100 is used as the span end.
+
+    Args:
+        brake_pct: Filtered brake pressure 0.0–100.0%.
+        min_brake: Minimum brake % to activate motor (config).
+        top_limit: Brake % threshold for continuous zone; 0 = disabled.
+        freq_low: Pulse frequency (Hz) at min_brake_pressure.
+        freq_high: Pulse frequency (Hz) at top_limit_pattern.
+        exponent: Response curve exponent (shared with motor power ramp).
+
+    Returns:
+        Half-period in seconds.
+    """
+    effective_top = top_limit if top_limit > 0 else 100
+    span = effective_top - min_brake
+    if span <= 0:
+        return 1.0 / (2.0 * freq_high)
+    t = max(0.0, min(1.0, (brake_pct - min_brake) / span))
+    if exponent != 1.0:
+        t = t ** exponent
+    freq = freq_low + t * (freq_high - freq_low)
+    return 1.0 / (2.0 * freq)

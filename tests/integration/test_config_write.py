@@ -15,7 +15,7 @@ import pytest
 from piedalmetry.config import (
     AntiFluctuationConfig,
     AppConfig,
-    MotorConfig,
+    BrakeConfig,
     PlayStationConfig,
     load_config,
     write_back_ip,
@@ -30,14 +30,13 @@ mock_mode = true
 log_level = "INFO"
 log_target = "stdout"
 
-[motor]
-gpio_ena = 18
-gpio_in1 = 23
-gpio_in2 = 24
-pwm_frequency = 1000
-min_brake_pressure = 30
-min_motor_strength = 50
-min_car_speed = 5
+[brake]
+brake_gpio_ena = 18
+brake_gpio_in1 = 23
+brake_gpio_in2 = 24
+brake_pwm_frequency = 1000
+brake_min_pressure = 30
+brake_min_car_speed = 5
 
 [anti_fluctuation]
 dead_zone = 2.0
@@ -104,15 +103,15 @@ class TestConfigWriteBack:
         write_back_ip(cfg, "192.168.1.50")
 
         cfg2 = load_config(config_file)
-        assert cfg2.motor.gpio_ena == 18
-        assert cfg2.motor.min_brake_pressure == 30
+        assert cfg2.brake.gpio_ena == 18
+        assert cfg2.brake.min_pressure == 30  # default
         assert cfg2.anti_fluctuation.dead_zone == pytest.approx(2.0)
         assert cfg2.log_level == "INFO"
 
     def test_write_back_noop_if_config_file_missing(self) -> None:
         """write_back_ip should not raise if config file path is gone."""
         cfg = AppConfig(
-            motor=MotorConfig(),
+            brake=BrakeConfig(),
             anti_fluctuation=AntiFluctuationConfig(),
             playstation=PlayStationConfig(ip=""),
             _config_path="/nonexistent/path/config.toml",

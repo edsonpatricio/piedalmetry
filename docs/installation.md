@@ -112,7 +112,25 @@ uv run python -m piedalmetry run --config /etc/piedalmetry/config.toml --log-lev
 # Ctrl+C to stop
 ```
 
-## Step 6 — Install as a systemd Service
+## Step 6 — Fix LED Boot State
+
+By default GPIO 17 floats HIGH during boot, which lights the blue LED before
+piedalmetry starts. Tell the firmware to drive it LOW from power-on:
+
+```bash
+echo "gpio=17=op,dl" | sudo tee -a /boot/config.txt
+```
+
+Verify the line was appended:
+
+```bash
+grep "gpio=17" /boot/config.txt
+```
+
+The change takes effect on the next reboot. After that the LED stays off
+until piedalmetry turns it on when GT7 telemetry is established.
+
+## Step 8 — Install as a systemd Service
 
 ```bash
 cd ~/dev/piedalmetry
@@ -129,7 +147,7 @@ piedalmetry status    # Should show: active (running)
 piedalmetry log --lines 10
 ```
 
-## Step 7 — Verify Service Survives Reboot
+## Step 9 — Verify Service Survives Reboot
 
 ```bash
 sudo reboot

@@ -16,8 +16,8 @@ down.
  GPIO2  (3) (4)  5V
  GPIO3  (5) (6)  GND
  GPIO4  (7) (8)  GPIO14
-   GND  (9) (10) GPIO15
-GPIO17 (11) (12) GPIO18  ◄── ENA (PWM)
+   GND  (9) (10) GPIO15   ◄── LED cathode (GND)
+GPIO17 (11) (12) GPIO18  ◄── ENA (PWM)    ◄── LED anode (via 330 Ω)
 GPIO27 (13) (14) GND
 GPIO22 (15) (16) GPIO23  ◄── IN1
    3V3 (17) (18) GPIO24  ◄── IN2
@@ -36,13 +36,15 @@ GPIO26 (37) (38) GPIO20
 
 ## Pins Used by Piedalmetry
 
-| Physical Pin | BCM | Function | L298N |
-|-------------|-----|----------|-------|
-| Pin 2 | 5V | Power | VCC |
-| Pin 6 | GND | Ground | GND |
-| **Pin 12** | **GPIO 18** | **ENA (PWM)** | **ENA** |
-| **Pin 16** | **GPIO 23** | **IN1** | **IN1** |
-| **Pin 18** | **GPIO 24** | **IN2** | **IN2** |
+| Physical Pin | BCM | Function | Connected to |
+|-------------|-----|----------|--------------|
+| Pin 2 | 5V | Power | L298N VCC |
+| Pin 6 | GND | Ground | L298N GND |
+| **Pin 9** | **GND** | **LED cathode** | **Blue LED (−)** |
+| **Pin 11** | **GPIO 17** | **LED anode** | **330 Ω → Blue LED (+)** |
+| **Pin 12** | **GPIO 18** | **ENA (PWM)** | **L298N ENA** |
+| **Pin 16** | **GPIO 23** | **IN1** | **L298N IN1** |
+| **Pin 18** | **GPIO 24** | **IN2** | **L298N IN2** |
 
 ## BCM vs Physical Pin Numbering
 

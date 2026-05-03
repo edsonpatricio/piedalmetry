@@ -18,6 +18,9 @@ exactly. Double-check every connection before applying power.
 
 [L298N OUT1] ──► [Motor +]
 [L298N OUT2] ──► [Motor −]
+
+[Pi GPIO 17 (pin 11)] ──► [220 Ω resistor] ──► [Blue LED anode (longer leg)]
+[Blue LED cathode (shorter leg)] ──► [Pi GND (pin 9)]
 ```
 
 ## Wiring Topology
@@ -27,6 +30,8 @@ graph LR
     subgraph Pi ["Raspberry Pi 2B"]
         P2["Pin 2 (5V)"]
         P6["Pin 6 (GND)"]
+        P9["Pin 9 (GND)"]
+        P11["Pin 11 (GPIO 17)"]
         P12["Pin 12 (GPIO 18)"]
         P16["Pin 16 (GPIO 23)"]
         P18["Pin 18 (GPIO 24)"]
@@ -53,6 +58,12 @@ graph LR
         MM["−"]
     end
 
+    subgraph LED ["Blue Status LED"]
+        R["220 Ω resistor"]
+        LA["Anode (+ longer leg)"]
+        LC["Cathode (− shorter leg)"]
+    end
+
     P2  --> VCC
     P6  --> GND_L
     P12 --> ENA
@@ -64,9 +75,13 @@ graph LR
 
     OUT1 --> MP
     OUT2 --> MM
+
+    P11 --> R --> LA --> LC --> P9
 ```
 
 ## Connection Table
+
+### Motor driver (L298N)
 
 | Pi Physical Pin | Pi BCM | Signal | L298N Pin | Notes |
 |-----------------|--------|--------|-----------|-------|
@@ -82,6 +97,21 @@ graph LR
 | GND | 12V supply − and Pi GND | Must be common |
 | OUT1 | Motor + | Polarity determines spin direction |
 | OUT2 | Motor − | Swap OUT1/OUT2 to reverse direction |
+
+### Blue connection status LED
+
+| Pi Physical Pin | Pi BCM | Signal | Notes |
+|-----------------|--------|--------|-------|
+| Pin 11 | GPIO 17 | LED anode — longer leg (via resistor) | Hardcoded, no config entry |
+| Pin 9 | GND | LED cathode — shorter leg | Any GND pin works |
+
+Wire in series: `Pi GPIO 17 → 220 Ω → LED anode (longer leg) → LED cathode (shorter leg) → Pi GND`.
+
+The LED turns on when the first GT7 telemetry packet is received, and turns off when the connection is lost (3 consecutive receive timeouts) or when the service stops.
+
+**Boot-time state**: GPIO 17 floats HIGH during boot, which lights the LED before piedalmetry starts. Fix this by adding `gpio=17=op,dl` to `/boot/config.txt` (see [docs/installation.md](../installation.md) Step 6).
+
+Blue LEDs have a typical forward voltage of ~3.0 V, leaving only ~0.3 V across the resistor on a 3.3 V GPIO pin. With a 220 Ω resistor that is roughly 1–2 mA — enough to see the LED in low light but visibly dim in daylight. This is a hardware limitation of driving blue LEDs from a 3.3 V rail, not a wiring error. To increase brightness, use a lower value resistor (100 Ω gives ~3 mA; 68 Ω gives ~4 mA) while staying within the Pi's 16 mA per-pin maximum.
 
 ## Signal Logic
 
