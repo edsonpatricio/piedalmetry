@@ -116,7 +116,7 @@ def uninstall() -> None:
 @main.command()
 def status() -> None:
     """Show service status."""
-    subprocess.run(["systemctl", "status", "piedalmetry"], check=False)
+    subprocess.run(["sudo", "systemctl", "status", "piedalmetry", "--no-pager"], check=False)
 
 
 @main.command()

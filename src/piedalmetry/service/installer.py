@@ -18,6 +18,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User={user}
+WorkingDirectory=/tmp
 ExecStart={python} -m piedalmetry run --config {config_path}
 Restart=on-failure
 RestartSec=5
@@ -29,6 +30,10 @@ WantedBy=multi-user.target
 
 def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
     """Install piedalmetry as a systemd service."""
+    if os.geteuid() != 0:
+        print("ERROR: install requires root. Run with sudo.", file=sys.stderr)
+        sys.exit(1)
+
     user = os.environ.get("SUDO_USER") or os.environ.get("USER", "dietpi")
     python = sys.executable
 
@@ -42,12 +47,14 @@ def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
     print(f"Created {_UNIT_PATH}")
     print(f"  User:    {user}")
     print(f"  Python:  {python}")
+    print(f"  Config:  {config_path}")
 
     # Ensure the config file is readable by the service user (not just root).
     config = Path(config_path)
     if config.exists():
         config.chmod(0o644)
         config.parent.chmod(0o755)
+        print(f"  Permissions set: {config_path} → 644")
 
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     subprocess.run(["systemctl", "enable", "piedalmetry"], check=True)
@@ -57,6 +64,10 @@ def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
 
 def uninstall_service() -> None:
     """Stop, disable, and remove the piedalmetry systemd service."""
+    if os.geteuid() != 0:
+        print("ERROR: uninstall requires root. Run with sudo.", file=sys.stderr)
+        sys.exit(1)
+
     subprocess.run(["systemctl", "stop", "piedalmetry"], check=False)
     subprocess.run(["systemctl", "disable", "piedalmetry"], check=False)
 

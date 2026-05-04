@@ -1,37 +1,21 @@
 # Installation Guide
 
-**Target**: Raspberry Pi 2 Model B running DietPi v10.x
+**Target**: Raspberry Pi 2 Model B running DietPi
 
 ## Prerequisites
 
 - DietPi installed and SSH accessible (`ssh dietpi@<pi-ip>`)
-- Python 3.11+ available on the Pi
+- Python 3.11+ available on the Pi (DietPi ships 3.13+; no action needed)
 - `uv` package manager installed
 - Hardware wired per [docs/hardware/wiring.md](hardware/wiring.md)
 - GT7 running on a PlayStation on the local network
-
-### Install Python 3.11 on DietPi
-
-```bash
-# Check current Python version
-python3 --version
-
-# If < 3.11, install via dietpi-software or apt:
-sudo apt-get update
-sudo apt-get install -y python3.11 python3.11-venv
-```
 
 ### Install uv
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
-# Or using pip:
-pip3 install uv
-```
-
-Verify:
-
-```bash
+# Reload shell so uv is on PATH
+source ~/.bashrc
 uv --version
 ```
 
@@ -43,21 +27,19 @@ sudo apt-get install -y python3-lgpio
 
 ## Step 1 — Clone the Repository
 
-The repository is mirrored on the Pi at `/home/dietpi/dev/piedalmetry`.
-If not yet present:
-
 ```bash
+mkdir -p ~/dev
 cd ~/dev
-git clone <repo-url> piedalmetry
+git clone https://github.com/edsonpatricio/piedalmetry.git
 cd piedalmetry
 ```
 
-## Step 2 — Install Dependencies
+## Step 2 — Configure the Environment
 
-> **Note — project on a network share (CIFS/Samba)?**
-> CIFS doesn't support symlinks, and Python virtual environments rely on them
-> heavily. If `~/dev` is a network mount, tell uv to create the venv on local
-> storage and add it to PATH:
+> **On a network share (CIFS/Samba)?**
+> CIFS doesn't support symlinks. Python virtual environments use symlinks
+> extensively, so the venv must live on local storage. Run this once, then
+> reload the shell:
 >
 > ```bash
 > cat >> ~/.bashrc << 'EOF'
@@ -67,16 +49,14 @@ cd piedalmetry
 > source ~/.bashrc
 > ```
 >
-> This only needs to be done once. Skip it if `~/dev` is on the local SD card.
-> Adding the venv bin to PATH makes the `piedalmetry` command available without
-> activating the venv.
+> Skip this block if `~/dev` is on the local SD card.
+
+Install Python dependencies:
 
 ```bash
 cd ~/dev/piedalmetry
 uv sync
 ```
-
-Expected output: all packages installed without errors.
 
 Verify:
 
@@ -88,16 +68,17 @@ uv run python -c "import Crypto; import click; print('deps OK')"
 
 ```bash
 sudo mkdir -p /etc/piedalmetry
-sudo cp config.example.toml /etc/piedalmetry/config.toml
+sudo cp ~/dev/piedalmetry/config.example.toml /etc/piedalmetry/config.toml
 sudo nano /etc/piedalmetry/config.toml
 ```
 
 **Required edits**:
 
-1. Set `playstation.ip` to your PS5 IP address (e.g. `"192.168.1.50"`).
-   Leave empty to use auto-discovery (same subnet only).
-2. Verify `motor.gpio_ena`, `motor.gpio_in1`, `motor.gpio_in2` match
-   your physical wiring (defaults are 18/23/24).
+1. Set `ip` under `[playstation]` to your PS5 IP address (e.g. `"192.168.1.50"`).
+   Leave empty to use automatic UDP discovery (same subnet only).
+2. Verify the GPIO pins under `[brake]` match your physical wiring.
+   Defaults (`brake_gpio_ena = 18`, `brake_gpio_in1 = 23`, `brake_gpio_in2 = 24`)
+   match the standard wiring in [docs/hardware/wiring.md](hardware/wiring.md).
 
 See [docs/configuration.md](configuration.md) for all options.
 
@@ -106,15 +87,14 @@ See [docs/configuration.md](configuration.md) for all options.
 Verify the installation without requiring a PlayStation or motor:
 
 ```bash
-cd ~/dev/piedalmetry
-uv run python -m piedalmetry run --mock --log-level DEBUG
+piedalmetry run --mock --log-level DEBUG
 # Ctrl+C to stop
 ```
 
-Verify a sweep test:
+Verify the motor mapping sweep:
 
 ```bash
-uv run python -m piedalmetry mock --sweep --duration 5
+piedalmetry mock --sweep --duration 5
 # Should log motor_pct values sweeping 0→100→0 without errors
 ```
 
@@ -123,54 +103,54 @@ uv run python -m piedalmetry mock --sweep --duration 5
 With the motor wired and a GT7 session active:
 
 ```bash
-cd ~/dev/piedalmetry
-uv run python -m piedalmetry run --config /etc/piedalmetry/config.toml --log-level DEBUG
+piedalmetry run --log-level DEBUG
 # Brake in GT7 → motor should vibrate proportionally
 # Ctrl+C to stop
 ```
 
 ## Step 6 — Fix LED Boot State
 
-By default GPIO 17 floats HIGH during boot, which lights the blue LED before
-piedalmetry starts. Tell the firmware to drive it LOW from power-on:
+By default GPIO 17 floats HIGH during boot, which lights the connection LED
+before piedalmetry starts. Tell the firmware to drive it LOW from power-on:
 
 ```bash
-echo "gpio=17=op,dl" | sudo tee -a /boot/config.txt
+# DietPi (and most Pi OS releases since 2022) use /boot/firmware/config.txt:
+echo "gpio=17=op,dl" | sudo tee -a /boot/firmware/config.txt
+
+# Older systems that still use /boot/config.txt:
+# echo "gpio=17=op,dl" | sudo tee -a /boot/config.txt
 ```
 
-Verify the line was appended:
+Verify:
 
 ```bash
-grep "gpio=17" /boot/config.txt
+grep "gpio=17" /boot/firmware/config.txt
 ```
 
 The change takes effect on the next reboot. After that the LED stays off
-until piedalmetry turns it on when GT7 telemetry is established.
+until piedalmetry turns it on when the first GT7 telemetry packet is received.
 
-## Step 8 — Install as a systemd Service
+## Step 7 — Install as a systemd Service
 
 ```bash
 cd ~/dev/piedalmetry
 sudo $(uv run which python) -m piedalmetry install --config /etc/piedalmetry/config.toml
 ```
 
-`uv run which python` resolves the full path to the venv Python (e.g.
-`/home/dietpi/.venv/piedalmetry/bin/python`). Passing it to `sudo` avoids
-`sudo uv run`, which would try to recreate the venv as root and fail. The
-installer writes that same Python path into the systemd `ExecStart` line so
-the service never needs to call uv at runtime.
+`uv run which python` resolves the full path to the venv Python
+(e.g. `/home/dietpi/.venv/piedalmetry/bin/python`). Passing it to `sudo`
+avoids `sudo uv run`, which tries to recreate the venv as root and fails on
+CIFS mounts. The installer bakes that Python path into the systemd `ExecStart`
+line so the service never calls uv at runtime.
 
-This installs `/etc/systemd/system/piedalmetry.service` and enables it
-to start on boot.
-
-Verify:
+Verify the service started:
 
 ```bash
-piedalmetry status    # Should show: active (running)
-piedalmetry log --lines 10
+piedalmetry status
+piedalmetry log --lines 20
 ```
 
-## Step 9 — Verify Service Survives Reboot
+## Step 8 — Verify Service Survives Reboot
 
 ```bash
 sudo reboot
@@ -179,24 +159,29 @@ ssh dietpi@<pi-ip>
 piedalmetry status    # Should show: active (running)
 ```
 
+## Day-to-day Commands
+
+These work as the `dietpi` user without extra `sudo`:
+
+```bash
+piedalmetry status          # Show service status
+piedalmetry log             # View recent logs
+piedalmetry log -f          # Follow live logs
+piedalmetry start           # Start service
+piedalmetry stop            # Stop service
+piedalmetry restart         # Restart service
+piedalmetry troubleshoot    # Run diagnostics
+```
+
 ## Uninstall
 
 ```bash
-sudo piedalmetry uninstall
+cd ~/dev/piedalmetry
+sudo $(uv run which python) -m piedalmetry uninstall
 ```
 
 This stops the service, disables it, and removes the unit file.
 The config file at `/etc/piedalmetry/config.toml` is preserved.
-
-## Troubleshooting Installation
-
-Run the built-in diagnostics:
-
-```bash
-piedalmetry troubleshoot
-```
-
-See [docs/troubleshooting.md](troubleshooting.md) for common failure modes.
 
 ## References
 
