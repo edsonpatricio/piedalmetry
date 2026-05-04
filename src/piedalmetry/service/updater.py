@@ -92,14 +92,25 @@ def _apply(archive_path: str, project_root: Path) -> None:
 
 
 def _detect_venv() -> Path:
-    # The installer always creates /usr/local/bin/piedalmetry as a symlink
-    # to {venv}/bin/piedalmetry — resolving it gives the venv reliably even
-    # when sudo replaces sys.executable with /usr/bin/python3.
+    # Primary: parse the systemd service file — the installer bakes the venv
+    # Python path into ExecStart, so this is reliable regardless of how sudo
+    # replaces sys.executable with /usr/bin/python3.
+    import re
+    unit = Path("/etc/systemd/system/piedalmetry.service")
+    if unit.exists():
+        m = re.search(r"ExecStart=(\S+)\s+-m\s+piedalmetry", unit.read_text())
+        if m:
+            venv_python = Path(m.group(1))
+            if venv_python.exists():
+                return venv_python.parents[1]
+
+    # Fallback: follow the /usr/local/bin/piedalmetry symlink if present.
     cli_link = Path("/usr/local/bin/piedalmetry")
     if cli_link.is_symlink():
         return cli_link.resolve().parents[1]
-    # Dev fallback: sys.executable without .resolve() so we stay inside the
-    # venv rather than following python3 → /usr/bin/python3 → parents[1]=/usr.
+
+    # Last resort: sys.executable without .resolve() (avoids following
+    # python3 → /usr/bin/python3 → parents[1] = /usr).
     return Path(sys.executable).parents[1]
 
 
