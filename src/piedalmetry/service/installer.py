@@ -59,12 +59,23 @@ def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
         cli_link.symlink_to(cli_src)
         print(f"  Symlinked: {cli_link} → {cli_src}")
 
-    # Ensure the config file is readable by the service user (not just root).
+    # Ensure the config file is owned and writable by the service user so that
+    # write_back_ip (auto-persisting discovered PS IP) can update it at runtime.
+    import pwd
     config = Path(config_path)
     if config.exists():
-        config.chmod(0o644)
-        config.parent.chmod(0o755)
-        print(f"  Permissions set: {config_path} → 644")
+        try:
+            uid = pwd.getpwnam(user).pw_uid
+            gid = pwd.getpwnam(user).pw_gid
+            os.chown(config, uid, gid)
+            os.chown(config.parent, uid, gid)
+            config.chmod(0o644)
+            config.parent.chmod(0o755)
+            print(f"  Ownership set: {config_path} → {user}")
+        except KeyError:
+            config.chmod(0o644)
+            config.parent.chmod(0o755)
+            print(f"  Permissions set: {config_path} → 644")
 
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     subprocess.run(["systemctl", "enable", "piedalmetry"], check=True)

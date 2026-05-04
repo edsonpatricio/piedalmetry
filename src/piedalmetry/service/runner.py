@@ -161,7 +161,13 @@ class Runner:
                 extra={"kv": {"ps_ip": ip}},
             )
             from piedalmetry.config import write_back_ip
-            write_back_ip(self._config, ip)
+            try:
+                write_back_ip(self._config, ip)
+            except PermissionError:
+                self._logger.warning(
+                    "Cannot persist IP — config not writable (run reinstall to fix)",
+                    extra={"kv": {"ps_ip": ip}},
+                )
 
         def _on_connected() -> None:
             self._led.on()
