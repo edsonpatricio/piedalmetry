@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import pwd
 import shutil
 import subprocess
 import sys
@@ -90,18 +91,27 @@ def _apply(archive_path: str, project_root: Path) -> None:
     print("  Files updated.")
 
 
+def _detect_venv() -> Path:
+    # The installer always creates /usr/local/bin/piedalmetry as a symlink
+    # to {venv}/bin/piedalmetry — resolving it gives the venv reliably even
+    # when sudo replaces sys.executable with /usr/bin/python3.
+    cli_link = Path("/usr/local/bin/piedalmetry")
+    if cli_link.is_symlink():
+        return cli_link.resolve().parents[1]
+    # Dev fallback: sys.executable without .resolve() so we stay inside the
+    # venv rather than following python3 → /usr/bin/python3 → parents[1]=/usr.
+    return Path(sys.executable).parents[1]
+
+
 def _sync_venv(project_root: Path) -> None:
     print("Syncing dependencies...")
-    # Derive venv from the running interpreter without .resolve() — following
-    # the python3 symlink would land at /usr/bin/python3 (system Python) and
-    # give parents[1] = /usr, which is invalid. The un-resolved path stays
-    # inside the venv: <venv>/bin/python3 → parents[1] = <venv>.
-    # sudo strips UV_PROJECT_ENVIRONMENT from the environment, so we set it
-    # explicitly to prevent uv from trying to recreate .venv on the CIFS mount.
-    venv_path = Path(sys.executable).parents[1]
-    print(f"  Venv:    {venv_path}")
+    venv_path = _detect_venv()
+    # Run as the venv owner so uv doesn't install files owned by root,
+    # which would break subsequent non-root uv sync calls.
+    venv_owner = pwd.getpwuid(venv_path.stat().st_uid).pw_name
+    print(f"  Venv:    {venv_path} (owner: {venv_owner})")
     subprocess.run(
-        ["uv", "sync"],
+        ["sudo", "-u", venv_owner, "uv", "sync"],
         cwd=project_root,
         env={**os.environ, "UV_PROJECT_ENVIRONMENT": str(venv_path)},
         check=True,
