@@ -45,8 +45,13 @@ def discover_playstation(
     _own_socket = sock is None
     if _own_socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.bind(("0.0.0.0", RECV_PORT))
+
+    # Enable broadcast on any socket (new or reused) when we need it.
+    # The listener socket is created without SO_BROADCAST; setting it here
+    # allows re-discovery broadcasts without recreating the socket.
+    if not target_ip:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     sock.settimeout(timeout)
 
