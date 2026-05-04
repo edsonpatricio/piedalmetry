@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import urllib.request
@@ -91,10 +92,18 @@ def _apply(archive_path: str, project_root: Path) -> None:
 
 def _sync_venv(project_root: Path) -> None:
     print("Syncing dependencies...")
+    # Derive venv from the running interpreter without .resolve() — following
+    # the python3 symlink would land at /usr/bin/python3 (system Python) and
+    # give parents[1] = /usr, which is invalid. The un-resolved path stays
+    # inside the venv: <venv>/bin/python3 → parents[1] = <venv>.
+    # sudo strips UV_PROJECT_ENVIRONMENT from the environment, so we set it
+    # explicitly to prevent uv from trying to recreate .venv on the CIFS mount.
+    venv_path = Path(sys.executable).parents[1]
+    print(f"  Venv:    {venv_path}")
     subprocess.run(
         ["uv", "sync"],
         cwd=project_root,
-        env={**os.environ},
+        env={**os.environ, "UV_PROJECT_ENVIRONMENT": str(venv_path)},
         check=True,
     )
 
