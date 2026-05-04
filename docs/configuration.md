@@ -48,28 +48,34 @@ when running as a service). `log_target = "file"` writes to
 | `brake_gpio_ena` | int | `18` | 0–27 | BCM pin for ENA (PWM speed) |
 | `brake_gpio_in1` | int | `23` | 0–27 | BCM pin for IN1 (direction) |
 | `brake_gpio_in2` | int | `24` | 0–27 | BCM pin for IN2 (direction) |
-| `brake_pwm_frequency` | int | `1000` | 50–25000 | PWM carrier frequency in Hz |
-| `brake_min_pressure` | int | `30` | 0–99 | Brake % below which motor is off |
+| `brake_pwm_frequency` | int | `100` | 50–25000 | PWM carrier frequency in Hz |
+| `brake_min_pressure` | int | `10` | 0–99 | Brake % below which motor is off |
 | `brake_min_strength` | int | `50` | 1–99 | Motor duty % at `brake_min_pressure`; ramps linearly to 100% |
-| `brake_min_car_speed` | int | `5` | 0–500 | Car speed (km/h) below which motor is off |
-| `brake_min_pulse_freq` | float | `6.0` | 0.1–20.0 | Pulse frequency (Hz) at `brake_min_pressure` |
+| `brake_min_car_speed` | int | `0` | 0–500 | Car speed (km/h) below which motor is off |
+| `brake_min_pulse_freq` | float | `3.0` | 0.1–20.0 | Pulse frequency (Hz) at `brake_min_pressure` |
 | `brake_max_pulse_freq` | float | `12.0` | 0.1–20.0 | Pulse frequency (Hz) at `brake_top_limit_pattern` |
-| `brake_feedback_exponent` | float | `2.0` | 0.1–10.0 | Response curve exponent for the frequency ramp |
-| `brake_top_limit_pattern` | int | `0` | 0 or (`brake_min_pressure`+1)–100 | Brake % above which motor runs continuously; `0` = disabled |
+| `brake_feedback_exponent` | float | `3.0` | 0.1–10.0 | Response curve exponent for the frequency ramp |
+| `brake_top_limit_pattern` | int | `98` | 0 or (`brake_min_pressure`+1)–100 | Brake % above which motor runs continuously; `0` = disabled |
+| `brake_foot_sensor_enabled` | bool | `true` | — | Enable foot-on-pedal gate; motor off when no foot detected |
+| `brake_foot_sensor_gpio` | int | `25` | 0–27 | BCM signal pin (active LOW, pull-up enabled) |
+| `brake_foot_sensor_feed_gpio` | int | `21` | 0–27 | BCM pin driven permanently HIGH to feed the sensor switch |
+| `brake_foot_sensor_led_gpio` | int | `6` | 0–27 | BCM pin for foot-detection indicator LED (LOW=off, HIGH=foot detected) |
 
 ```toml
 [brake]
 brake_gpio_ena = 18
 brake_gpio_in1 = 23
 brake_gpio_in2 = 24
-brake_pwm_frequency = 1000
-brake_min_pressure = 30
+brake_pwm_frequency = 100
+brake_min_pressure = 10
 brake_min_strength = 50
-brake_min_car_speed = 5
-brake_min_pulse_freq = 6.0
+brake_min_car_speed = 0
+brake_min_pulse_freq = 3.0
 brake_max_pulse_freq = 12.0
-brake_feedback_exponent = 2.0
-brake_top_limit_pattern = 0
+brake_feedback_exponent = 3.0
+brake_top_limit_pattern = 98
+brake_foot_sensor_enabled = true
+brake_foot_sensor_gpio = 25
 ```
 
 **Three feedback zones**:
@@ -107,6 +113,19 @@ frequency-coded pulses to a solid 100% duty above this threshold — simulating
 the feel of a car at its braking limit. Must be greater than
 `brake_min_pressure`. Set to `0` to disable (default).
 
+**`brake_foot_sensor_*`**: The sensor circuit runs whenever the service is
+running (regardless of `brake_foot_sensor_enabled`). The feed pin
+(`brake_foot_sensor_feed_gpio`, default physical pin 40) is driven permanently
+HIGH. Wire a normally-open switch between the feed pin and the signal pin
+(default physical pin 22). When the foot presses the switch the signal pin
+goes LOW — detected as foot on pedal. No external resistor needed (internal
+pull-up enabled).
+
+`brake_foot_sensor_led_gpio` (default physical pin 31) drives an indicator LED:
+LOW when no foot is detected, HIGH when a foot is detected. This LED is always
+active — `brake_foot_sensor_enabled` only controls whether the motor is gated
+by the sensor, not whether the LED works.
+
 See [docs/hardware/rpi2b-pinout.md](hardware/rpi2b-pinout.md) for BCM
 pin numbering. Defaults match the standard Piedalmetry wiring.
 
@@ -134,16 +153,22 @@ passes through).
 
 ### `[playstation]`
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `ip` | string | `""` | PlayStation IP address |
-| `label` | string | `""` | Human-friendly name for this console |
+| Key | Type | Default | Valid | Description |
+|-----|------|---------|-------|-------------|
+| `ip` | string | `""` | — | PlayStation IP address |
+| `label` | string | `"PS5"` | — | Human-friendly name for this console |
+| `ps_conn_led_gpio` | int | `17` | 0–27 | BCM pin for the GT7 connection status LED |
 
 ```toml
 [playstation]
 ip = "192.168.1.50"
 label = "PS5"
+ps_conn_led_gpio = 17
 ```
+
+`ps_conn_led_gpio`: LED turns on when the first GT7 telemetry packet is received and
+turns off on connection loss or service shutdown. Wire in series with a 220 Ω resistor
+between the GPIO pin (physical pin 11 for the default GPIO 17) and GND.
 
 If `ip` is empty, the service attempts UDP broadcast discovery on
 startup (same-subnet only). For cross-subnet setups (Pi on a different

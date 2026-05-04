@@ -73,15 +73,17 @@ All parameters are in a validated TOML config file. Copy
 `config.example.toml` to `/etc/piedalmetry/config.toml` and edit:
 
 ```toml
-[motor]
-gpio_ena = 18          # BCM GPIO for PWM (pin 12)
-gpio_in1 = 23          # BCM GPIO for direction IN1 (pin 16)
-gpio_in2 = 24          # BCM GPIO for direction IN2 (pin 18)
-min_brake_pressure = 30
-min_motor_strength = 50
+[brake]
+brake_gpio_ena = 18         # BCM GPIO for PWM (pin 12)
+brake_gpio_in1 = 23         # BCM GPIO for direction IN1 (pin 16)
+brake_gpio_in2 = 24         # BCM GPIO for direction IN2 (pin 18)
+brake_min_pressure = 10
+brake_min_strength = 50
+brake_top_limit_pattern = 98
 
 [playstation]
-ip = "192.168.1.50"    # PS5 IP; leave empty for auto-discovery
+ip = "192.168.1.50"         # PS5 IP; leave empty for auto-discovery
+label = "PS5"
 ```
 
 Full reference: [docs/configuration.md](docs/configuration.md)

@@ -35,8 +35,8 @@ brake_pwm_frequency = 100
 
 # Minimum brake pressure (%) to activate the motor
 # Below this value the motor stays off.
-# Type: int | Default: 20 | Valid: 0-99
-brake_min_pressure = 20
+# Type: int | Default: 10 | Valid: 0-99
+brake_min_pressure = 10
 
 # Minimum motor duty cycle (%) at brake_min_pressure.
 # Ramps linearly to 100% at brake_top_limit_pattern.
@@ -49,19 +49,40 @@ brake_min_strength = 50
 # Type: int | Default: 0 | Valid: 0-500
 brake_min_car_speed = 0
 
+# Enable foot-on-pedal detection via a digital input pin.
+# When enabled, the motor only activates while the pin reads LOW (foot on pedal).
+# Set to false to disable and ignore the sensor entirely.
+# Type: bool | Default: true
+brake_foot_sensor_enabled = true
+
+# BCM GPIO pin for the foot sensor signal (active LOW: LOW = foot on pedal, pull-up enabled).
+# Type: int | Default: 25 | Valid: 0-27
+brake_foot_sensor_gpio = 25  # physical pin 22
+
+# BCM GPIO pin driven permanently HIGH to feed the sensor switch.
+# Wire: feed pin → one leg of switch → signal pin. No external resistor needed.
+# Type: int | Default: 21 | Valid: 0-27
+brake_foot_sensor_feed_gpio = 21  # physical pin 40
+
+# BCM GPIO pin for the foot-detection indicator LED.
+# LED is LOW (off) at rest; turns HIGH (on) when a foot is detected on the pedal.
+# Active regardless of brake_foot_sensor_enabled (which only gates the motor).
+# Type: int | Default: 6 | Valid: 0-27
+brake_foot_sensor_led_gpio = 6  # physical pin 31
+
 # Pulse frequency range (Hz) across the braking zone.
 # Frequency ramps from brake_min_pulse_freq at brake_min_pressure
 # to brake_max_pulse_freq at brake_top_limit_pattern. Above the threshold
 # the motor runs continuously at 100% (no pulsing).
 # Type: float | Valid: 0.1-20.0
-brake_min_pulse_freq = 3.0   # Hz at brake_min_pressure       | Default: 6.0
-brake_max_pulse_freq = 14.0  # Hz at brake_top_limit_pattern  | Default: 12.0
+brake_min_pulse_freq = 3.0   # Hz at brake_min_pressure       | Default: 3.0
+brake_max_pulse_freq = 12.0  # Hz at brake_top_limit_pattern  | Default: 12.0
 
 # Response curve exponent applied to the pulse frequency ramp.
 # Controls how quickly the frequency rises as brake pressure increases.
 #   1.0 = linear (equal brake steps → equal frequency steps)
 #   >1.0 = slow start / fast end (subtle at light braking, aggressive near limit)
-# Type: float | Default: 2.0 | Valid: 0.1-10.0
+# Type: float | Default: 3.0 | Valid: 0.1-10.0
 brake_feedback_exponent = 3.0
 
 # Brake pressure (%) above which the motor runs continuously at 100% power.
@@ -91,3 +112,9 @@ ip = "192.168.1.50"
 # Human-friendly label for this console
 # Type: string | Default: "PS5"
 label = "PS5"
+
+# BCM GPIO pin for the GT7 connection status LED.
+# LED turns on when telemetry is connected, off when disconnected or service stops.
+# Wire: GPIO pin → 220 Ω resistor → LED anode (longer leg) → LED cathode → GND.
+# Type: int | Default: 17 | Valid: 0-27
+ps_conn_led_gpio = 17  # physical pin 11

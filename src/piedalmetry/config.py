@@ -20,7 +20,8 @@ class PlayStationConfig:
     """PlayStation connection configuration."""
 
     ip: str = ""
-    label: str = ""
+    label: str = "PS5"
+    conn_led_gpio: int = 17
 
 
 @dataclass
@@ -30,14 +31,18 @@ class BrakeConfig:
     gpio_ena: int = 18
     gpio_in1: int = 23
     gpio_in2: int = 24
-    pwm_frequency: int = 1000
-    min_pressure: int = 30
+    pwm_frequency: int = 100
+    min_pressure: int = 10
     min_strength: int = 50
-    min_car_speed: int = 5
-    min_pulse_freq: float = 6.0
+    min_car_speed: int = 0
+    min_pulse_freq: float = 3.0
     max_pulse_freq: float = 12.0
-    feedback_exponent: float = 2.0
-    top_limit_pattern: int = 0
+    feedback_exponent: float = 3.0
+    top_limit_pattern: int = 98
+    foot_sensor_enabled: bool = True
+    foot_sensor_gpio: int = 25
+    foot_sensor_feed_gpio: int = 21
+    foot_sensor_led_gpio: int = 6
 
 
 @dataclass
@@ -79,6 +84,10 @@ _VALIDATORS: dict[str, tuple[type, Any, Any]] = {
     "brake.brake_max_pulse_freq": (float, 0.1, 20.0),
     "brake.brake_feedback_exponent": (float, 0.1, 10.0),
     "brake.brake_top_limit_pattern": (int, 0, 100),
+    "brake.brake_foot_sensor_gpio": (int, 0, 27),
+    "brake.brake_foot_sensor_feed_gpio": (int, 0, 27),
+    "brake.brake_foot_sensor_led_gpio": (int, 0, 27),
+    "playstation.ps_conn_led_gpio": (int, 0, 27),
     "anti_fluctuation.dead_zone": (float, 0.0, 50.0),
     "anti_fluctuation.ema_alpha": (float, 0.0, 1.0),
 }
@@ -184,14 +193,18 @@ def load_config(path: str | Path) -> AppConfig:
             gpio_ena=brake_data.get("brake_gpio_ena", 18),
             gpio_in1=brake_data.get("brake_gpio_in1", 23),
             gpio_in2=brake_data.get("brake_gpio_in2", 24),
-            pwm_frequency=brake_data.get("brake_pwm_frequency", 1000),
-            min_pressure=brake_data.get("brake_min_pressure", 30),
-            min_strength=brake_data.get("brake_min_strength", 70),
-            min_car_speed=brake_data.get("brake_min_car_speed", 5),
-            min_pulse_freq=float(brake_data.get("brake_min_pulse_freq", 6.0)),
+            pwm_frequency=brake_data.get("brake_pwm_frequency", 100),
+            min_pressure=brake_data.get("brake_min_pressure", 10),
+            min_strength=brake_data.get("brake_min_strength", 50),
+            min_car_speed=brake_data.get("brake_min_car_speed", 0),
+            min_pulse_freq=float(brake_data.get("brake_min_pulse_freq", 3.0)),
             max_pulse_freq=float(brake_data.get("brake_max_pulse_freq", 12.0)),
-            feedback_exponent=float(brake_data.get("brake_feedback_exponent", 2.0)),
-            top_limit_pattern=int(brake_data.get("brake_top_limit_pattern", 0)),
+            feedback_exponent=float(brake_data.get("brake_feedback_exponent", 3.0)),
+            top_limit_pattern=int(brake_data.get("brake_top_limit_pattern", 98)),
+            foot_sensor_enabled=bool(brake_data.get("brake_foot_sensor_enabled", True)),
+            foot_sensor_gpio=int(brake_data.get("brake_foot_sensor_gpio", 25)),
+            foot_sensor_feed_gpio=int(brake_data.get("brake_foot_sensor_feed_gpio", 21)),
+            foot_sensor_led_gpio=int(brake_data.get("brake_foot_sensor_led_gpio", 6)),
         ),
         anti_fluctuation=AntiFluctuationConfig(
             dead_zone=af_data.get("dead_zone", 2.0),
@@ -199,7 +212,8 @@ def load_config(path: str | Path) -> AppConfig:
         ),
         playstation=PlayStationConfig(
             ip=ps_data.get("ip", ""),
-            label=ps_data.get("label", ""),
+            label=ps_data.get("label", "PS5"),
+            conn_led_gpio=int(ps_data.get("ps_conn_led_gpio", 17)),
         ),
         _config_path=str(config_path),
     )

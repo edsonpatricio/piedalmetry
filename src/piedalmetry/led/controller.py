@@ -1,4 +1,4 @@
-"""Blue status LED controller — GPIO 17 (Physical Pin 11).
+"""Status LED controller — GPIO pin configurable via [led] config section.
 
 Lights up when GT7 telemetry connection is established; turns off on
 connection loss or shutdown.
@@ -13,9 +13,6 @@ import logging
 import os
 
 _log = logging.getLogger("piedalmetry.led.controller")
-
-# BCM GPIO 17, Physical Pin 11 — hardcoded, no config entry needed.
-LED_GPIO = 17
 
 
 class LedControllerBase(abc.ABC):
@@ -35,12 +32,13 @@ class LedControllerBase(abc.ABC):
 
 
 class LedController(LedControllerBase):
-    """Blue status LED using gpiozero (lgpio backend).
+    """Status LED using gpiozero (lgpio backend).
 
-    Wiring: GPIO 17 → 220 Ω resistor → LED anode (longer leg) → LED cathode (shorter leg) → GND (Pin 9).
+    Args:
+        gpio_pin: BCM pin number for the LED (default 17, physical pin 11).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, gpio_pin: int = 17) -> None:
         original_cwd = os.getcwd()
         try:
             os.chdir("/tmp")
@@ -51,7 +49,7 @@ class LedController(LedControllerBase):
             if not isinstance(Device.pin_factory, LGPIOFactory):
                 Device.pin_factory = LGPIOFactory()
 
-            self._led = LED(LED_GPIO)
+            self._led = LED(gpio_pin, initial_value=False)
         finally:
             os.chdir(original_cwd)
 

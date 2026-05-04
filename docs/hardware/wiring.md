@@ -113,6 +113,30 @@ The LED turns on when the first GT7 telemetry packet is received, and turns off 
 
 Blue LEDs have a typical forward voltage of ~3.0 V, leaving only ~0.3 V across the resistor on a 3.3 V GPIO pin. With a 220 Ω resistor that is roughly 1–2 mA — enough to see the LED in low light but visibly dim in daylight. This is a hardware limitation of driving blue LEDs from a 3.3 V rail, not a wiring error. To increase brightness, use a lower value resistor (100 Ω gives ~3 mA; 68 Ω gives ~4 mA) while staying within the Pi's 16 mA per-pin maximum.
 
+### Foot-on-pedal sensor (optional)
+
+| Pi Physical Pin | Pi BCM | Signal | Notes |
+|-----------------|--------|--------|-------|
+| Pin 40 | GPIO 21 | Foot sensor feed | Permanently HIGH — one leg of switch |
+| Pin 22 | GPIO 25 | Foot sensor signal | Other leg of switch (active LOW, pull-up) |
+
+Wire a normally-open switch between physical pin 40 (GPIO 21, feed) and physical pin 22
+(GPIO 25, signal). When the foot presses the pedal the switch closes, the feed HIGH pulls
+the signal LOW — detected as "foot on pedal". No external resistor or 3.3 V wire needed.
+
+`brake_foot_sensor_enabled` in config controls only whether the motor is gated by the
+sensor. The sensor circuit and foot LED are always active while the service runs.
+
+### Foot-detection indicator LED
+
+| Pi Physical Pin | Pi BCM | Signal | Notes |
+|-----------------|--------|--------|-------|
+| Pin 31 | GPIO 6 | Foot sensor LED | LOW=off, HIGH=foot detected |
+| Any GND | GND | LED cathode return | |
+
+Wire in series: `Pi GPIO 6 (pin 31) → 220 Ω → LED anode (longer leg) → LED cathode (shorter leg) → Pi GND`.
+The LED turns on when a foot is detected and turns off when the foot is lifted, regardless of `brake_foot_sensor_enabled`.
+
 ## Signal Logic
 
 Motor direction is set by IN1/IN2. Piedalmetry always drives forward

@@ -13,6 +13,11 @@ from collections import deque
 from typing import Any
 
 from piedalmetry.config import AppConfig
+from piedalmetry.foot_sensor.controller import (
+    FootSensorBase,
+    FootSensorController,
+    MockFootSensorController,
+)
 from piedalmetry.led.controller import LedController, LedControllerBase, MockLedController
 from piedalmetry.logging import LatencyTracker, setup_logging
 from piedalmetry.motor.controller import MotorController, MotorControllerBase
@@ -38,13 +43,18 @@ class Runner:
         self._packet_queue: deque[TelemetryPacket] = deque(maxlen=1)
         self._pulse_on = True
         self._pulse_last_toggle = 0.0
+        self._foot_led_on = False
 
         # Select motor controller
         self._motor: MotorControllerBase
         self._led: LedControllerBase
+        self._foot_led: LedControllerBase
+        self._foot_sensor: FootSensorBase
         if config.mock_mode:
             self._motor = MockMotorController()
             self._led = MockLedController()
+            self._foot_led = MockLedController()
+            self._foot_sensor = MockFootSensorController()
             self._logger.info("Motor controller: MOCK mode")
         else:
             self._motor = MotorController(
@@ -53,7 +63,14 @@ class Runner:
                 gpio_in2=config.brake.gpio_in2,
                 pwm_frequency=config.brake.pwm_frequency,
             )
-            self._led = LedController()
+            self._led = LedController(config.playstation.conn_led_gpio)
+            self._foot_led = LedController(config.brake.foot_sensor_led_gpio)
+            # Always instantiate the real sensor so the foot LED works even when
+            # foot_sensor_enabled = false (which only gates the motor).
+            self._foot_sensor = FootSensorController(
+                config.brake.foot_sensor_gpio,
+                config.brake.foot_sensor_feed_gpio,
+            )
 
     def _on_packet(self, pkt: TelemetryPacket) -> None:
         """Callback from listener thread — enqueue latest packet."""
@@ -80,6 +97,7 @@ class Runner:
             "Configuration",
             extra={"kv": {
                 "mock_mode": self._config.mock_mode,
+                "ps_conn_led_gpio": self._config.playstation.conn_led_gpio,
                 "ps_label": self._config.playstation.label or "(none)",
                 "brake_gpio_ena": b.gpio_ena,
                 "brake_gpio_in1": b.gpio_in1,
@@ -92,6 +110,10 @@ class Runner:
                 "brake_max_pulse_freq": b.max_pulse_freq,
                 "brake_feedback_exponent": b.feedback_exponent,
                 "brake_top_limit_pattern": b.top_limit_pattern if b.top_limit_pattern > 0 else "disabled",
+                "brake_foot_sensor_enabled": b.foot_sensor_enabled,
+                "brake_foot_sensor_gpio": b.foot_sensor_gpio,
+                "brake_foot_sensor_feed_gpio": b.foot_sensor_feed_gpio,
+                "brake_foot_sensor_led_gpio": b.foot_sensor_led_gpio,
                 "af_dead_zone": af.dead_zone,
                 "af_ema_alpha": af.ema_alpha,
             }},
@@ -131,6 +153,15 @@ class Runner:
 
         try:
             while self._running:
+                # Foot LED: always reflects sensor state (independent of foot_sensor_enabled)
+                foot_on = self._foot_sensor.is_foot_detected()
+                if foot_on != self._foot_led_on:
+                    self._foot_led_on = foot_on
+                    if foot_on:
+                        self._foot_led.on()
+                    else:
+                        self._foot_led.off()
+
                 if not self._packet_queue:
                     time.sleep(0.001)  # 1ms yield
                     continue
@@ -140,6 +171,12 @@ class Runner:
 
                 # Speed gate
                 if pkt.car_speed_kph < self._config.brake.min_car_speed:
+                    self._motor.stop()
+                    self._filter.reset()
+                    continue
+
+                # Foot sensor motor gate (only when enabled)
+                if self._config.brake.foot_sensor_enabled and not foot_on:
                     self._motor.stop()
                     self._filter.reset()
                     continue
@@ -193,7 +230,10 @@ class Runner:
             listener.stop()
             self._led.off()
             self._led.cleanup()
+            self._foot_led.off()
+            self._foot_led.cleanup()
             self._motor.cleanup()
+            self._foot_sensor.cleanup()
             self._logger.info("Pipeline stopped")
 
     def run_mock_sweep(self, duration: float = 10.0) -> None:

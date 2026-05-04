@@ -46,7 +46,7 @@ label = "PS5"
         _write_toml(cfg_file, "[general]\nmock_mode = true\n")
         cfg = load_config(cfg_file)
         assert cfg.brake.gpio_ena == 18       # default
-        assert cfg.brake.min_pressure == 30   # default
+        assert cfg.brake.min_pressure == 10   # default
 
     def test_empty_ps_ip_is_valid(self, tmp_path: Path) -> None:
         cfg_file = tmp_path / "config.toml"
@@ -84,11 +84,11 @@ class TestConfigInvalid:
         with pytest.raises(ConfigError, match="brake_pwm_frequency.*10.*50-25000"):
             load_config(cfg_file)
 
-    def test_top_limit_pattern_default_is_zero(self, tmp_path: Path) -> None:
+    def test_top_limit_pattern_default(self, tmp_path: Path) -> None:
         cfg_file = tmp_path / "config.toml"
         _write_toml(cfg_file, "[general]\nmock_mode = true\n")
         cfg = load_config(cfg_file)
-        assert cfg.brake.top_limit_pattern == 0
+        assert cfg.brake.top_limit_pattern == 98
 
     def test_top_limit_pattern_loaded(self, tmp_path: Path) -> None:
         cfg_file = tmp_path / "config.toml"
@@ -116,3 +116,46 @@ class TestConfigInvalid:
         _write_toml(cfg_file, "[brake]\nbrake_min_pressure = 60\nbrake_top_limit_pattern = 0\n")
         cfg = load_config(cfg_file)
         assert cfg.brake.top_limit_pattern == 0
+
+    def test_foot_sensor_enabled_defaults_to_true(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[general]\nmock_mode = true\n")
+        cfg = load_config(cfg_file)
+        assert cfg.brake.foot_sensor_enabled is True
+
+    def test_foot_sensor_gpio_defaults_to_25(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[general]\nmock_mode = true\n")
+        cfg = load_config(cfg_file)
+        assert cfg.brake.foot_sensor_gpio == 25
+
+    def test_foot_sensor_gpio_loaded(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[brake]\nbrake_foot_sensor_enabled = true\nbrake_foot_sensor_gpio = 22\n")
+        cfg = load_config(cfg_file)
+        assert cfg.brake.foot_sensor_enabled is True
+        assert cfg.brake.foot_sensor_gpio == 22
+
+    def test_foot_sensor_gpio_out_of_range(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[brake]\nbrake_foot_sensor_gpio = 99\n")
+        with pytest.raises(ConfigError, match="brake_foot_sensor_gpio.*99.*0-27"):
+            load_config(cfg_file)
+
+    def test_foot_sensor_led_gpio_defaults_to_6(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[general]\nmock_mode = true\n")
+        cfg = load_config(cfg_file)
+        assert cfg.brake.foot_sensor_led_gpio == 6
+
+    def test_foot_sensor_led_gpio_loaded(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[brake]\nbrake_foot_sensor_led_gpio = 13\n")
+        cfg = load_config(cfg_file)
+        assert cfg.brake.foot_sensor_led_gpio == 13
+
+    def test_foot_sensor_led_gpio_out_of_range(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[brake]\nbrake_foot_sensor_led_gpio = 99\n")
+        with pytest.raises(ConfigError, match="brake_foot_sensor_led_gpio.*99.*0-27"):
+            load_config(cfg_file)

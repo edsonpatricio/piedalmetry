@@ -45,16 +45,22 @@ GPIO26 (37) (38) GPIO20
 | **Pin 12** | **GPIO 18** | **ENA (PWM)** | **L298N ENA** |
 | **Pin 16** | **GPIO 23** | **IN1** | **L298N IN1** |
 | **Pin 18** | **GPIO 24** | **IN2** | **L298N IN2** |
+| **Pin 40** | **GPIO 21** | **Foot sensor feed** | **Permanently HIGH — one leg of switch** |
+| **Pin 22** | **GPIO 25** | **Foot sensor signal** | **Switch to feed pin (active LOW)** |
+| **Pin 31** | **GPIO 6** | **Foot sensor LED** | **LOW=off, HIGH=foot detected (via 220 Ω)** |
 
 ## BCM vs Physical Pin Numbering
 
 Piedalmetry uses **BCM (Broadcom) numbering** in the config file:
 
 ```toml
-[motor]
-gpio_ena = 18   # BCM 18 → Physical pin 12
-gpio_in1 = 23   # BCM 23 → Physical pin 16
-gpio_in2 = 24   # BCM 24 → Physical pin 18
+[brake]
+brake_gpio_ena = 18   # BCM 18 → Physical pin 12
+brake_gpio_in1 = 23   # BCM 23 → Physical pin 16
+brake_gpio_in2 = 24   # BCM 24 → Physical pin 18
+brake_foot_sensor_feed_gpio = 21  # BCM 21 → Physical pin 40
+brake_foot_sensor_gpio = 25       # BCM 25 → Physical pin 22
+brake_foot_sensor_led_gpio = 6    # BCM 6  → Physical pin 31
 ```
 
 Do not confuse BCM numbers with physical pin numbers. The config
