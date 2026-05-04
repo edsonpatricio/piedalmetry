@@ -1,6 +1,6 @@
 [project]
 name = "piedalmetry"
-version = "0.3.3"
+version = "0.3.4"
 description = "GT7 brake-pressure-to-motor rumble feedback for Raspberry Pi 2B"
 readme = "README.md"
 requires-python = ">=3.11"
