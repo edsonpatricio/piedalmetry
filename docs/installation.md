@@ -44,12 +44,13 @@ cd piedalmetry
 > ```bash
 > cat >> ~/.bashrc << 'EOF'
 > export UV_PROJECT_ENVIRONMENT=/home/dietpi/.venv/piedalmetry
-> export PATH="$UV_PROJECT_ENVIRONMENT/bin:$PATH"
 > EOF
 > source ~/.bashrc
 > ```
 >
 > Skip this block if `~/dev` is on the local SD card.
+> The `piedalmetry` CLI is made globally available by the install step (Step 7)
+> — no PATH changes are needed.
 
 Install Python dependencies:
 

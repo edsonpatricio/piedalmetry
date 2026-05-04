@@ -49,6 +49,16 @@ def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
     print(f"  Python:  {python}")
     print(f"  Config:  {config_path}")
 
+    # Symlink piedalmetry CLI into /usr/local/bin so it's on PATH for all users
+    # without needing shell profile changes.
+    venv_bin = Path(python).parent
+    cli_src = venv_bin / "piedalmetry"
+    cli_link = Path("/usr/local/bin/piedalmetry")
+    if cli_src.exists():
+        cli_link.unlink(missing_ok=True)
+        cli_link.symlink_to(cli_src)
+        print(f"  Symlinked: {cli_link} → {cli_src}")
+
     # Ensure the config file is readable by the service user (not just root).
     config = Path(config_path)
     if config.exists():
@@ -74,6 +84,11 @@ def uninstall_service() -> None:
     if _UNIT_PATH.exists():
         _UNIT_PATH.unlink()
         print(f"Removed {_UNIT_PATH}")
+
+    cli_link = Path("/usr/local/bin/piedalmetry")
+    if cli_link.is_symlink():
+        cli_link.unlink()
+        print(f"Removed {cli_link}")
 
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     print("Service uninstalled.")
