@@ -57,14 +57,19 @@ cd piedalmetry
 > **Note — project on a network share (CIFS/Samba)?**
 > CIFS doesn't support symlinks, and Python virtual environments rely on them
 > heavily. If `~/dev` is a network mount, tell uv to create the venv on local
-> storage instead:
+> storage and add it to PATH:
 >
 > ```bash
-> echo 'export UV_PROJECT_ENVIRONMENT=/home/dietpi/.venv/piedalmetry' >> ~/.bashrc
+> cat >> ~/.bashrc << 'EOF'
+> export UV_PROJECT_ENVIRONMENT=/home/dietpi/.venv/piedalmetry
+> export PATH="$UV_PROJECT_ENVIRONMENT/bin:$PATH"
+> EOF
 > source ~/.bashrc
 > ```
 >
 > This only needs to be done once. Skip it if `~/dev` is on the local SD card.
+> Adding the venv bin to PATH makes the `piedalmetry` command available without
+> activating the venv.
 
 ```bash
 cd ~/dev/piedalmetry

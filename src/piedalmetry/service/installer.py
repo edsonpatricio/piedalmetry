@@ -43,6 +43,12 @@ def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
     print(f"  User:    {user}")
     print(f"  Python:  {python}")
 
+    # Ensure the config file is readable by the service user (not just root).
+    config = Path(config_path)
+    if config.exists():
+        config.chmod(0o644)
+        config.parent.chmod(0o755)
+
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     subprocess.run(["systemctl", "enable", "piedalmetry"], check=True)
     subprocess.run(["systemctl", "start", "piedalmetry"], check=True)
