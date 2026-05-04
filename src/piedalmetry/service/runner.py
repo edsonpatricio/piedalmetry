@@ -7,6 +7,7 @@ The main thread processes packets and drives the motor.
 from __future__ import annotations
 
 import signal
+import subprocess
 import threading
 import time
 from collections import deque
@@ -24,6 +25,11 @@ from piedalmetry.motor.controller import MotorController, MotorControllerBase
 from piedalmetry.motor.filter import BrakeFilter
 from piedalmetry.motor.mapping import map_brake_to_pulse_half_period
 from piedalmetry.motor.mock import MockMotorController
+from piedalmetry.shutdown_button.controller import (
+    MockShutdownButtonController,
+    ShutdownButtonBase,
+    ShutdownButtonController,
+)
 from piedalmetry.telemetry.listener import TelemetryListener
 from piedalmetry.telemetry.parser import TelemetryPacket
 
@@ -45,16 +51,20 @@ class Runner:
         self._pulse_last_toggle = 0.0
         self._foot_led_on = False
 
+        self._shutdown_requested = False
+
         # Select motor controller
         self._motor: MotorControllerBase
         self._led: LedControllerBase
         self._foot_led: LedControllerBase
         self._foot_sensor: FootSensorBase
+        self._shutdown_button: ShutdownButtonBase
         if config.mock_mode:
             self._motor = MockMotorController()
             self._led = MockLedController()
             self._foot_led = MockLedController()
             self._foot_sensor = MockFootSensorController()
+            self._shutdown_button = MockShutdownButtonController()
             self._logger.info("Motor controller: MOCK mode")
         else:
             self._motor = MotorController(
@@ -71,6 +81,20 @@ class Runner:
                 config.brake.foot_sensor_gpio,
                 config.brake.foot_sensor_feed_gpio,
             )
+            if config.shutdown_button_gpio >= 0:
+                def _on_shutdown_press() -> None:
+                    self._logger.info(
+                        "Shutdown button pressed — initiating system shutdown"
+                    )
+                    self._shutdown_requested = True
+                    self._running = False
+
+                self._shutdown_button = ShutdownButtonController(
+                    config.shutdown_button_gpio, _on_shutdown_press
+                )
+            else:
+                self._shutdown_button = MockShutdownButtonController()
+                self._logger.info("Shutdown button: disabled (gpio=-1)")
 
     def _on_packet(self, pkt: TelemetryPacket) -> None:
         """Callback from listener thread — enqueue latest packet."""
@@ -99,6 +123,11 @@ class Runner:
                 "mock_mode": self._config.mock_mode,
                 "ps_conn_led_gpio": self._config.playstation.conn_led_gpio,
                 "ps_label": self._config.playstation.label or "(none)",
+                "shutdown_button_gpio": (
+                    self._config.shutdown_button_gpio
+                    if self._config.shutdown_button_gpio >= 0
+                    else "disabled"
+                ),
                 "brake_gpio_ena": b.gpio_ena,
                 "brake_gpio_in1": b.gpio_in1,
                 "brake_gpio_in2": b.gpio_in2,
@@ -124,6 +153,8 @@ class Runner:
             extra={"kv": {"ps_ip": ps_ip or "auto-discover"}},
         )
 
+        self._led.blink()
+
         def _on_ip_discovered(ip: str) -> None:
             self._logger.info(
                 "PlayStation discovered — persisting IP",
@@ -137,8 +168,8 @@ class Runner:
             self._logger.info("GT7 telemetry connected")
 
         def _on_disconnected() -> None:
-            self._led.off()
-            self._logger.warning("GT7 telemetry connection lost")
+            self._led.blink()
+            self._logger.warning("GT7 telemetry connection lost — re-discovering")
 
         listener = TelemetryListener(
             ps_ip,
@@ -234,7 +265,11 @@ class Runner:
             self._foot_led.cleanup()
             self._motor.cleanup()
             self._foot_sensor.cleanup()
+            self._shutdown_button.cleanup()
             self._logger.info("Pipeline stopped")
+            if self._shutdown_requested:
+                self._logger.info("Issuing system shutdown")
+                subprocess.run(["sudo", "shutdown", "-h", "now"], check=False)
 
     def run_mock_sweep(self, duration: float = 10.0) -> None:
         """Run a sweep 0→100→0 on the motor for testing."""

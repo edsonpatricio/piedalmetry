@@ -1,7 +1,7 @@
 """Status LED controller — GPIO pin configurable via [led] config section.
 
-Lights up when GT7 telemetry connection is established; turns off on
-connection loss or shutdown.
+Blinks while searching for GT7 telemetry; goes solid when connected;
+turns off on shutdown.
 
 Uses the same gpiozero/lgpio setup as the motor controller.
 """
@@ -20,11 +20,15 @@ class LedControllerBase(abc.ABC):
 
     @abc.abstractmethod
     def on(self) -> None:
-        """Turn the LED on."""
+        """Turn the LED on (solid)."""
 
     @abc.abstractmethod
     def off(self) -> None:
         """Turn the LED off."""
+
+    @abc.abstractmethod
+    def blink(self, on_time: float = 0.5, off_time: float = 0.5) -> None:
+        """Blink the LED in the background. Calling on() or off() stops it."""
 
     @abc.abstractmethod
     def cleanup(self) -> None:
@@ -59,6 +63,9 @@ class LedController(LedControllerBase):
     def off(self) -> None:
         self._led.off()
 
+    def blink(self, on_time: float = 0.5, off_time: float = 0.5) -> None:
+        self._led.blink(on_time=on_time, off_time=off_time, background=True)
+
     def cleanup(self) -> None:
         try:
             self.off()
@@ -71,19 +78,27 @@ class MockLedController(LedControllerBase):
     """LED controller that records state without GPIO access."""
 
     def __init__(self) -> None:
-        self._is_on = False
+        self._state = "off"  # "on", "off", "blink"
 
     def on(self) -> None:
-        self._is_on = True
+        self._state = "on"
         _log.info("LED: ON (mock)")
 
     def off(self) -> None:
-        self._is_on = False
+        self._state = "off"
         _log.info("LED: OFF (mock)")
+
+    def blink(self, on_time: float = 0.5, off_time: float = 0.5) -> None:
+        self._state = "blink"
+        _log.info("LED: BLINK (mock)")
 
     def cleanup(self) -> None:
         pass
 
     @property
     def is_on(self) -> bool:
-        return self._is_on
+        return self._state == "on"
+
+    @property
+    def state(self) -> str:
+        return self._state

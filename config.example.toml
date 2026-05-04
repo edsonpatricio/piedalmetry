@@ -16,6 +16,14 @@ log_level = "INFO"
 # Type: string | Default: "stdout"
 log_target = "stdout"
 
+# BCM GPIO pin for the hardware shutdown button (active LOW, pull-up enabled).
+# A HIGH→LOW transition (button press to GND) triggers a graceful shutdown.
+# GPIO 3 (physical pin 5) has a hardware 1.8 kΩ pull-up — no external resistor needed.
+# Wire: GPIO 3 (pin 5) → normally-open button → GND.
+# Set to -1 to disable the shutdown button entirely.
+# Type: int | Default: 3 | Valid: -1 (disabled) or 0-27
+shutdown_button_gpio = 3  # physical pin 5
+
 [brake]
 # BCM GPIO pin number for ENA (PWM speed control)
 # Type: int | Default: 18 | Valid: 0-27
@@ -114,7 +122,9 @@ ip = "192.168.1.50"
 label = "PS5"
 
 # BCM GPIO pin for the GT7 connection status LED.
-# LED turns on when telemetry is connected, off when disconnected or service stops.
+# Blinks while searching for GT7 telemetry (startup and re-discovery).
+# Goes solid ON when the first telemetry packet is received.
+# Turns OFF when the service stops.
 # Wire: GPIO pin → 220 Ω resistor → LED anode (longer leg) → LED cathode → GND.
 # Type: int | Default: 17 | Valid: 0-27
 ps_conn_led_gpio = 17  # physical pin 11

@@ -21,6 +21,8 @@ exactly. Double-check every connection before applying power.
 
 [Pi GPIO 17 (pin 11)] ──► [220 Ω resistor] ──► [Blue LED anode (longer leg)]
 [Blue LED cathode (shorter leg)] ──► [Pi GND (pin 9)]
+
+[Pi GPIO 3 (pin 5)] ──► [Normally-open button] ──► [Pi GND (pin 6)]
 ```
 
 ## Wiring Topology
@@ -107,11 +109,28 @@ graph LR
 
 Wire in series: `Pi GPIO 17 → 220 Ω → LED anode (longer leg) → LED cathode (shorter leg) → Pi GND`.
 
-The LED turns on when the first GT7 telemetry packet is received, and turns off when the connection is lost (3 consecutive receive timeouts) or when the service stops.
+The LED **blinks** while piedalmetry is searching for GT7 telemetry (startup and re-discovery after disconnect). It goes **solid ON** when the first valid packet is received, and turns **off** when the service stops.
 
 **Boot-time state**: GPIO 17 floats HIGH during boot, which lights the LED before piedalmetry starts. Fix this by adding `gpio=17=op,dl` to `/boot/config.txt` (see [docs/installation.md](../installation.md) Step 6).
 
 Blue LEDs have a typical forward voltage of ~3.0 V, leaving only ~0.3 V across the resistor on a 3.3 V GPIO pin. With a 220 Ω resistor that is roughly 1–2 mA — enough to see the LED in low light but visibly dim in daylight. This is a hardware limitation of driving blue LEDs from a 3.3 V rail, not a wiring error. To increase brightness, use a lower value resistor (100 Ω gives ~3 mA; 68 Ω gives ~4 mA) while staying within the Pi's 16 mA per-pin maximum.
+
+### Hardware shutdown button
+
+| Pi Physical Pin | Pi BCM | Signal | Notes |
+|-----------------|--------|--------|-------|
+| Pin 5 | GPIO 3 | Shutdown button | Active LOW; hardware 1.8 kΩ pull-up (no resistor needed) |
+| Any GND | GND | Button return | |
+
+Wire a normally-open push button between physical pin 5 (GPIO 3) and any GND pin.
+When the button is pressed the pin goes LOW — piedalmetry detects the HIGH→LOW
+transition, completes its cleanup, and issues `sudo shutdown -h now`.
+
+GPIO 3 (I2C SCL) has a hardware 1.8 kΩ pull-up to 3.3 V on the Pi 2B PCB, so no
+external resistor is needed. Only a transition from HIGH to LOW triggers the shutdown.
+If the pin is already LOW at boot (button held during power-on), nothing happens until
+the button is released and pressed again. Set `shutdown_button_gpio = -1` in config to
+disable this feature entirely.
 
 ### Foot-on-pedal sensor (optional)
 

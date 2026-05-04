@@ -29,17 +29,29 @@ Config validation failed:
 | `mock_mode` | bool | `false` | — | Skip real GPIO; use mock motor driver |
 | `log_level` | string | `"INFO"` | `DEBUG` `INFO` `WARNING` `ERROR` | Logging verbosity |
 | `log_target` | string | `"stdout"` | `journald` `stdout` `file` | Log destination |
+| `shutdown_button_gpio` | int | `3` | `-1` or `0`–`27` | BCM pin for hardware shutdown button; `-1` disables |
 
 ```toml
 [general]
 mock_mode = false
 log_level = "INFO"
 log_target = "stdout"
+shutdown_button_gpio = 3  # physical pin 5
 ```
 
 `log_target = "journald"` routes logs to systemd journal (recommended
 when running as a service). `log_target = "file"` writes to
 `/var/log/piedalmetry.log`.
+
+`shutdown_button_gpio`: monitors a GPIO pin for a HIGH→LOW transition
+(active-LOW push button). When the button is pressed, piedalmetry
+completes its cleanup and issues `sudo shutdown -h now`. GPIO 3
+(physical pin 5) is the default because it has a hardware 1.8 kΩ
+pull-up — no external resistor needed; just wire the pin to one leg of
+a normally-open button and the other leg to GND. Only a HIGH→LOW
+*transition* triggers the shutdown — if the pin is already LOW at boot
+(button held during power-on) no shutdown fires until the button is
+released and pressed again. Set to `-1` to disable the button entirely.
 
 ### `[brake]`
 
@@ -166,9 +178,12 @@ label = "PS5"
 ps_conn_led_gpio = 17
 ```
 
-`ps_conn_led_gpio`: LED turns on when the first GT7 telemetry packet is received and
-turns off on connection loss or service shutdown. Wire in series with a 220 Ω resistor
-between the GPIO pin (physical pin 11 for the default GPIO 17) and GND.
+`ps_conn_led_gpio`: **Blinks** while piedalmetry is searching for GT7
+telemetry (at startup and after a disconnect triggers re-discovery).
+Goes **solid ON** when the first valid telemetry packet is received.
+Turns **off** when the service stops. Wire in series with a 220 Ω
+resistor between the GPIO pin (physical pin 11 for the default GPIO 17)
+and GND.
 
 If `ip` is empty, the service attempts UDP broadcast discovery on
 startup (same-subnet only). For cross-subnet setups (Pi on a different

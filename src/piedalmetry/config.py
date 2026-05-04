@@ -60,6 +60,7 @@ class AppConfig:
     mock_mode: bool = False
     log_level: str = "INFO"
     log_target: str = "stdout"
+    shutdown_button_gpio: int = 3
     brake: BrakeConfig = field(default_factory=BrakeConfig)
     anti_fluctuation: AntiFluctuationConfig = field(
         default_factory=AntiFluctuationConfig
@@ -73,6 +74,7 @@ class ConfigError(Exception):
 
 
 _VALIDATORS: dict[str, tuple[type, Any, Any]] = {
+    "general.shutdown_button_gpio": (int, -1, 27),
     "brake.brake_gpio_ena": (int, 0, 27),
     "brake.brake_gpio_in1": (int, 0, 27),
     "brake.brake_gpio_in2": (int, 0, 27),
@@ -189,6 +191,7 @@ def load_config(path: str | Path) -> AppConfig:
         mock_mode=general.get("mock_mode", False),
         log_level=general.get("log_level", "INFO"),
         log_target=general.get("log_target", "stdout"),
+        shutdown_button_gpio=int(general.get("shutdown_button_gpio", 3)),
         brake=BrakeConfig(
             gpio_ena=brake_data.get("brake_gpio_ena", 18),
             gpio_in1=brake_data.get("brake_gpio_in1", 23),

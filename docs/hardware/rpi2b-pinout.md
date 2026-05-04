@@ -14,7 +14,7 @@ down.
 
    3V3  (1) (2)  5V
  GPIO2  (3) (4)  5V
- GPIO3  (5) (6)  GND
+ GPIO3  (5) (6)  GND  ◄── Shutdown button (to GND) / Shutdown button return
  GPIO4  (7) (8)  GPIO14
    GND  (9) (10) GPIO15   ◄── LED cathode (GND)
 GPIO17 (11) (12) GPIO18  ◄── ENA (PWM)    ◄── LED anode (via 330 Ω)
@@ -39,7 +39,8 @@ GPIO26 (37) (38) GPIO20
 | Physical Pin | BCM | Function | Connected to |
 |-------------|-----|----------|--------------|
 | Pin 2 | 5V | Power | L298N VCC |
-| Pin 6 | GND | Ground | L298N GND |
+| Pin 5 | GPIO 3 | Shutdown button | Normally-open button → GND (hardware pull-up) |
+| Pin 6 | GND | Ground | L298N GND / shutdown button return |
 | **Pin 9** | **GND** | **LED cathode** | **Blue LED (−)** |
 | **Pin 11** | **GPIO 17** | **LED anode** | **330 Ω → Blue LED (+)** |
 | **Pin 12** | **GPIO 18** | **ENA (PWM)** | **L298N ENA** |
@@ -54,6 +55,9 @@ GPIO26 (37) (38) GPIO20
 Piedalmetry uses **BCM (Broadcom) numbering** in the config file:
 
 ```toml
+[general]
+shutdown_button_gpio = 3  # BCM 3 → Physical pin 5
+
 [brake]
 brake_gpio_ena = 18   # BCM 18 → Physical pin 12
 brake_gpio_in1 = 23   # BCM 23 → Physical pin 16

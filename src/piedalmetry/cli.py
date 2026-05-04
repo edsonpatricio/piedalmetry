@@ -114,6 +114,22 @@ def uninstall() -> None:
 
 
 @main.command()
+@click.option(
+    "--release", "release_tag", default=None,
+    help="Install a specific release tag (e.g. v0.3.0). Default: latest release.",
+)
+@click.option(
+    "--main", "use_main", is_flag=True, default=False,
+    help="Update from the main branch instead of a release.",
+)
+def update(release_tag: str | None, use_main: bool) -> None:
+    """Update piedalmetry from GitHub (latest release by default)."""
+    from piedalmetry.service.updater import update_service
+
+    update_service(release_tag=release_tag, use_main=use_main)
+
+
+@main.command()
 def status() -> None:
     """Show service status."""
     subprocess.run(["sudo", "systemctl", "status", "piedalmetry", "--no-pager"], check=False)

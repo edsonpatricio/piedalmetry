@@ -80,6 +80,10 @@ sudo nano /etc/piedalmetry/config.toml
 2. Verify the GPIO pins under `[brake]` match your physical wiring.
    Defaults (`brake_gpio_ena = 18`, `brake_gpio_in1 = 23`, `brake_gpio_in2 = 24`)
    match the standard wiring in [docs/hardware/wiring.md](hardware/wiring.md).
+3. (Optional) Set `shutdown_button_gpio` under `[general]` to your shutdown button pin.
+   Default is GPIO 3 (physical pin 5), which has a hardware pull-up — no resistor needed.
+   Wire: GPIO 3 → normally-open button → GND.
+   Set to `-1` to disable the shutdown button.
 
 See [docs/configuration.md](configuration.md) for all options.
 
@@ -183,6 +187,31 @@ sudo $(uv run which python) -m piedalmetry uninstall
 
 This stops the service, disables it, and removes the unit file.
 The config file at `/etc/piedalmetry/config.toml` is preserved.
+
+## Updating
+
+Update to the latest release (recommended):
+
+```bash
+piedalmetry update
+```
+
+Install a specific release:
+
+```bash
+piedalmetry update --release v0.3.0
+```
+
+Update from the main branch (development / unreleased):
+
+```bash
+piedalmetry update --main
+```
+
+`piedalmetry update` downloads a tar.gz archive from GitHub (no git required),
+overwrites the source files and `pyproject.toml`, re-syncs the venv with
+`uv sync`, and restarts the service. The config file at
+`/etc/piedalmetry/config.toml` is never touched.
 
 ## References
 

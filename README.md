@@ -13,6 +13,11 @@ through your pedals.
 4. A configurable linear mapping converts brake % to motor PWM duty cycle
 5. An L298N motor driver receives the PWM signal and drives the 12V rumble motor
 
+The connection status LED (GPIO 17) blinks while searching for GT7
+telemetry and goes solid when connected. A hardware shutdown button
+(GPIO 3, physical pin 5) triggers a graceful `shutdown -h now` on
+HIGH→LOW transition.
+
 ## Hardware
 
 - Raspberry Pi 2 Model B (DietPi)
@@ -56,6 +61,9 @@ Full installation guide: [docs/installation.md](docs/installation.md)
 | `piedalmetry discover` | Find PS5 on the network |
 | `piedalmetry install` | Install as systemd service |
 | `piedalmetry uninstall` | Remove systemd service |
+| `piedalmetry update` | Update to latest GitHub release |
+| `piedalmetry update --release v0.3.0` | Update to a specific release |
+| `piedalmetry update --main` | Update from the main branch |
 | `piedalmetry status` | Show service status |
 | `piedalmetry start / stop / restart` | Control the service |
 | `piedalmetry log` | View service logs |

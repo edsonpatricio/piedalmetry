@@ -159,3 +159,27 @@ class TestConfigInvalid:
         _write_toml(cfg_file, "[brake]\nbrake_foot_sensor_led_gpio = 99\n")
         with pytest.raises(ConfigError, match="brake_foot_sensor_led_gpio.*99.*0-27"):
             load_config(cfg_file)
+
+    def test_shutdown_button_gpio_defaults_to_3(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[general]\nmock_mode = true\n")
+        cfg = load_config(cfg_file)
+        assert cfg.shutdown_button_gpio == 3
+
+    def test_shutdown_button_gpio_loaded(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[general]\nshutdown_button_gpio = 5\n")
+        cfg = load_config(cfg_file)
+        assert cfg.shutdown_button_gpio == 5
+
+    def test_shutdown_button_gpio_negative_one_disables(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[general]\nshutdown_button_gpio = -1\n")
+        cfg = load_config(cfg_file)
+        assert cfg.shutdown_button_gpio == -1
+
+    def test_shutdown_button_gpio_out_of_range(self, tmp_path: Path) -> None:
+        cfg_file = tmp_path / "config.toml"
+        _write_toml(cfg_file, "[general]\nshutdown_button_gpio = 99\n")
+        with pytest.raises(ConfigError, match="shutdown_button_gpio.*99.*-1-27"):
+            load_config(cfg_file)
