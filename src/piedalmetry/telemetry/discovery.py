@@ -94,6 +94,7 @@ class DiscoveryManager:
         discovery_timeout: float = 10.0,
     ) -> None:
         self._ip = initial_ip
+        self._last_ip = initial_ip  # preserved when _ip is cleared after failures
         self._retry_interval = retry_interval
         self._discovery_timeout = discovery_timeout
         self._fail_count = 0
@@ -135,13 +136,39 @@ class DiscoveryManager:
                 "3 consecutive failures for ps_ip=%s — clearing IP, re-discovering",
                 self._ip,
             )
+            self._last_ip = self._ip  # save for directed retry before broadcast
             self._ip = ""
             self._fail_count = 0
             return True
         return False
 
+    def retry_last_ip(self, sock: socket.socket | None = None) -> str | None:
+        """Try a directed reconnect to the last known IP before broadcasting.
+
+        Called after the IP is cleared by consecutive failures. If the
+        PlayStation responds, restores the IP and returns it. Does not
+        trigger the on_ip_discovered callback — the IP has not changed.
+
+        Returns:
+            The IP if reachable, None if not.
+        """
+        if not self._last_ip:
+            return None
+        _log.info(
+            "trying last known ps_ip=%s before broadcast", self._last_ip
+        )
+        ip = discover_playstation(
+            timeout=self._discovery_timeout,
+            target_ip=self._last_ip,
+            sock=sock,
+        )
+        if ip:
+            self._ip = ip
+            self._fail_count = 0
+        return ip
+
     def run_discovery(self, sock: socket.socket | None = None) -> str | None:
-        """Run discovery and update internal IP on success.
+        """Run broadcast discovery and update internal IP on success.
 
         Args:
             sock: Optional existing socket to reuse. Pass the listener's

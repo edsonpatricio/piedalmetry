@@ -130,9 +130,19 @@ class TelemetryListener:
 
         while self._running:
             if not self._discovery.target_ip:
-                # IP was cleared after 3 failures. Re-discover using the
-                # already-bound socket so we don't contest port 33740.
-                _log.info("IP cleared — running re-discovery")
+                # Step 1: try directed reconnect to last known IP (fast path,
+                # avoids broadcast and does not trigger on_ip_discovered).
+                ip = self._discovery.retry_last_ip(sock=sock)
+                if ip:
+                    _log.info(
+                        "Reconnected to last known ps_ip=%s", ip
+                    )
+                    sock.settimeout(_TIMEOUT_SECONDS)
+                    self._send_heartbeat(sock)
+                    continue
+
+                # Step 2: last IP unreachable — full broadcast discovery.
+                _log.info("Last IP unreachable — running broadcast re-discovery")
                 ip = self._discovery.run_discovery(sock=sock)
                 if ip:
                     if self._on_ip_discovered:
