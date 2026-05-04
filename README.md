@@ -3,7 +3,7 @@
 Real-time brake-pressure-to-motor-vibration feedback for Gran Turismo 7,
 running on a Raspberry Pi 2B. When you brake in GT7, a rumble motor
 wired to the Pi vibrates proportionally — giving tactile brake feedback
-through your pedals or seat.
+through your pedals.
 
 ## How It Works
 
