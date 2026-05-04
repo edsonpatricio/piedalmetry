@@ -134,8 +134,11 @@ until piedalmetry turns it on when GT7 telemetry is established.
 
 ```bash
 cd ~/dev/piedalmetry
-sudo uv run python -m piedalmetry install --config /etc/piedalmetry/config.toml
+sudo .venv/bin/python -m piedalmetry install --config /etc/piedalmetry/config.toml
 ```
+
+Using `.venv/bin/python` directly avoids `sudo uv run`, which would try to
+recreate the venv as root and fail with "Invalid argument" on the Pi's filesystem.
 
 This installs `/etc/systemd/system/piedalmetry.service` and enables it
 to start on boot.

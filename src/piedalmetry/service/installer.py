@@ -29,7 +29,7 @@ WantedBy=multi-user.target
 def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
     """Install piedalmetry as a systemd service."""
     uv_path = _find_uv()
-    user = os.environ.get("USER", "dietpi")
+    user = os.environ.get("SUDO_USER") or os.environ.get("USER", "dietpi")
 
     unit_content = _UNIT_TEMPLATE.format(
         user=user,
