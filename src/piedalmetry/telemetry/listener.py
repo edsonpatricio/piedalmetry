@@ -29,6 +29,7 @@ RECV_PORT = 33740
 HEARTBEAT = b"A"
 _HEARTBEAT_INTERVAL = 100  # packets between heartbeats
 _TIMEOUT_SECONDS = 2.0
+_REDISCOVERY_WAIT = 5.0   # seconds between failed discovery attempts
 
 
 class TelemetryListener:
@@ -36,17 +37,18 @@ class TelemetryListener:
 
     If ps_ip is empty, performs automatic broadcast discovery first.
     Tracks consecutive packet-receive failures; after 3 failures
-    (≥3s apart) clears the stored IP and re-discovers.
+    (≥3s apart) clears the stored IP and re-discovers using the
+    already-bound socket so port 33740 is never contested.
 
     Args:
         ps_ip: PlayStation IP address (empty string = auto-discover).
         on_packet: Callback invoked with each parsed TelemetryPacket.
         on_ip_discovered: Optional callback when IP is discovered/updated.
         on_connected: Optional callback fired when the first valid packet
-            arrives after a disconnected state (connection established).
+            arrives after a disconnected state.
         on_disconnected: Optional callback fired when 3 consecutive
-            failures trigger re-discovery (connection lost).
-        discovery_timeout: Seconds to wait for discovery.
+            failures trigger re-discovery.
+        discovery_timeout: Seconds to wait for a single discovery attempt.
     """
 
     def __init__(
@@ -96,6 +98,9 @@ class TelemetryListener:
     def _ensure_ip(self) -> bool:
         """Ensure we have a target IP, running discovery if needed.
 
+        Called once before the socket is bound, so it creates its own
+        temporary socket for the initial discovery attempt.
+
         Returns:
             True if an IP is available, False if discovery failed.
         """
@@ -125,9 +130,18 @@ class TelemetryListener:
 
         while self._running:
             if not self._discovery.target_ip:
-                # IP was cleared (re-discovery triggered externally)
-                _log.info("IP cleared — waiting for re-discovery")
-                time.sleep(1.0)
+                # IP was cleared after 3 failures. Re-discover using the
+                # already-bound socket so we don't contest port 33740.
+                _log.info("IP cleared — running re-discovery")
+                ip = self._discovery.run_discovery(sock=sock)
+                if ip:
+                    if self._on_ip_discovered:
+                        self._on_ip_discovered(ip)
+                    sock.settimeout(_TIMEOUT_SECONDS)
+                    self._send_heartbeat(sock)
+                else:
+                    # Discovery failed; wait before retrying.
+                    time.sleep(_REDISCOVERY_WAIT)
                 continue
 
             try:
@@ -166,9 +180,7 @@ class TelemetryListener:
                         self._connected = False
                         if self._on_disconnected:
                             self._on_disconnected()
-                    ip = self._discovery.run_discovery()
-                    if ip and self._on_ip_discovered:
-                        self._on_ip_discovered(ip)
+                    # IP is now cleared; next loop iteration runs discovery.
 
             except OSError:
                 if self._running:

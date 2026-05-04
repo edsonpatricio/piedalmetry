@@ -22,11 +22,16 @@ HEARTBEAT = b"A"
 def discover_playstation(
     timeout: float = 10.0,
     target_ip: str = "",
+    sock: socket.socket | None = None,
 ) -> str | None:
     """Discover a PlayStation running GT7 on the network.
 
     If target_ip is provided, sends a directed heartbeat to verify
     reachability. Otherwise broadcasts on the local subnet.
+
+    If sock is provided the function reuses it (no bind/close). This is
+    required when called from inside an already-listening loop so the
+    caller's bound port is not contested.
 
     Returns:
         The PlayStation IP address, or None if not found.
@@ -37,13 +42,15 @@ def discover_playstation(
         bool(target_ip),
     )
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(timeout)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-    try:
+    _own_socket = sock is None
+    if _own_socket:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.bind(("0.0.0.0", RECV_PORT))
 
+    sock.settimeout(timeout)
+
+    try:
         if target_ip:
             sock.sendto(HEARTBEAT, (target_ip, SEND_PORT))
         else:
@@ -62,7 +69,8 @@ def discover_playstation(
         _log.warning("discovery error: %s", exc)
         return None
     finally:
-        sock.close()
+        if _own_socket:
+            sock.close()
 
 
 class DiscoveryManager:
@@ -127,11 +135,17 @@ class DiscoveryManager:
             return True
         return False
 
-    def run_discovery(self) -> str | None:
-        """Run discovery and update internal IP on success."""
+    def run_discovery(self, sock: socket.socket | None = None) -> str | None:
+        """Run discovery and update internal IP on success.
+
+        Args:
+            sock: Optional existing socket to reuse. Pass the listener's
+                socket to avoid contesting the already-bound port 33740.
+        """
         ip = discover_playstation(
             timeout=self._discovery_timeout,
             target_ip=self._ip,
+            sock=sock,
         )
         if ip:
             self._ip = ip
