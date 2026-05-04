@@ -54,6 +54,18 @@ cd piedalmetry
 
 ## Step 2 — Install Dependencies
 
+> **Note — project on a network share (CIFS/Samba)?**
+> CIFS doesn't support symlinks, and Python virtual environments rely on them
+> heavily. If `~/dev` is a network mount, tell uv to create the venv on local
+> storage instead:
+>
+> ```bash
+> echo 'export UV_PROJECT_ENVIRONMENT=/home/dietpi/.venv/piedalmetry' >> ~/.bashrc
+> source ~/.bashrc
+> ```
+>
+> This only needs to be done once. Skip it if `~/dev` is on the local SD card.
+
 ```bash
 cd ~/dev/piedalmetry
 uv sync
@@ -134,11 +146,14 @@ until piedalmetry turns it on when GT7 telemetry is established.
 
 ```bash
 cd ~/dev/piedalmetry
-sudo .venv/bin/python -m piedalmetry install --config /etc/piedalmetry/config.toml
+sudo $(uv run which python) -m piedalmetry install --config /etc/piedalmetry/config.toml
 ```
 
-Using `.venv/bin/python` directly avoids `sudo uv run`, which would try to
-recreate the venv as root and fail with "Invalid argument" on the Pi's filesystem.
+`uv run which python` resolves the full path to the venv Python (e.g.
+`/home/dietpi/.venv/piedalmetry/bin/python`). Passing it to `sudo` avoids
+`sudo uv run`, which would try to recreate the venv as root and fail. The
+installer writes that same Python path into the systemd `ExecStart` line so
+the service never needs to call uv at runtime.
 
 This installs `/etc/systemd/system/piedalmetry.service` and enables it
 to start on boot.

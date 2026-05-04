@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 _UNIT_PATH = Path("/etc/systemd/system/piedalmetry.service")
@@ -17,7 +18,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User={user}
-ExecStart={uv_path} run python -m piedalmetry run --config {config_path}
+ExecStart={python} -m piedalmetry run --config {config_path}
 Restart=on-failure
 RestartSec=5
 
@@ -28,17 +29,19 @@ WantedBy=multi-user.target
 
 def install_service(config_path: str = "/etc/piedalmetry/config.toml") -> None:
     """Install piedalmetry as a systemd service."""
-    uv_path = _find_uv()
     user = os.environ.get("SUDO_USER") or os.environ.get("USER", "dietpi")
+    python = sys.executable
 
     unit_content = _UNIT_TEMPLATE.format(
         user=user,
-        uv_path=uv_path,
+        python=python,
         config_path=config_path,
     )
 
     _UNIT_PATH.write_text(unit_content)
     print(f"Created {_UNIT_PATH}")
+    print(f"  User:    {user}")
+    print(f"  Python:  {python}")
 
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     subprocess.run(["systemctl", "enable", "piedalmetry"], check=True)
@@ -57,13 +60,3 @@ def uninstall_service() -> None:
 
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     print("Service uninstalled.")
-
-
-def _find_uv() -> str:
-    """Locate the uv binary."""
-    result = subprocess.run(
-        ["which", "uv"], capture_output=True, text=True, check=False,
-    )
-    if result.returncode == 0:
-        return result.stdout.strip()
-    return "/usr/local/bin/uv"

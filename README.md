@@ -40,7 +40,7 @@ uv sync
 sudo mkdir -p /etc/piedalmetry
 sudo cp config.example.toml /etc/piedalmetry/config.toml
 # Edit config: set playstation.ip and verify GPIO pins
-sudo .venv/bin/python -m piedalmetry install
+sudo $(uv run which python) -m piedalmetry install
 piedalmetry status
 ```
 
