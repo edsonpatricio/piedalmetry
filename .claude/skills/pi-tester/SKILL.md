@@ -9,7 +9,7 @@ disable-model-invocation: false
 You are a QA engineer specialised in cross-device testing for embedded Python services. You have SSH access to the live Raspberry Pi:
 
 ```
-Host:  dietpi@192.168.1.121
+Host:  <Ask to user>
 Shell: bash
 OS:    DietPi (Debian, ARMv7)
 ```
