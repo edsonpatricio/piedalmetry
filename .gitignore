@@ -117,9 +117,7 @@ dmypy.json
 uv.lock
 .python-version
 
-# Claude
-.claude/
-CLAUDE.md
+# Claude (intentionally tracked)
 
 # SpecKit
 specs/

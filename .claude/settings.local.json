@@ -1,0 +1,34 @@
+{
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/unit/test_config.py tests/unit/test_mapping.py -v)",
+      "Bash(python -m pytest tests/unit/ tests/integration/ -v)",
+      "Bash(python -m pytest tests/unit/ tests/integration/ -q)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git checkout *)",
+      "Bash(xargs sed *)",
+      "Bash(git mv *)",
+      "Bash(python3 *)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(uv run *)",
+      "Bash(git remote *)",
+      "Bash(git tag *)",
+      "Bash(git fetch *)",
+      "Bash(gh release create v0.1.0 --title v0.1.0 --notes ' *)",
+      "Bash(uv sync *)",
+      "Bash(git push *)",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "Bash(git commit -m 'fix: try last known IP before broadcast on re-discovery *)",
+      "Bash(python -m pytest tests/ -x -q)",
+      "Bash(.venv/bin/python -m pytest tests/ -x -q)",
+      "Bash(.venv/bin/python -c \"import piedalmetry; print\\('import OK'\\)\")",
+      "Bash(.venv/bin/python -c \"from piedalmetry.telemetry.discovery import DiscoveryManager; d = DiscoveryManager\\('1.2.3.4'\\); print\\('static:', d._static_ip\\); d2 = DiscoveryManager\\(\\); print\\('dynamic:', d2._static_ip\\)\")",
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(git show *)"
+    ]
+  }
+}
