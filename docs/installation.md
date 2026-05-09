@@ -76,7 +76,9 @@ sudo nano /etc/piedalmetry/config.toml
 **Required edits**:
 
 1. Set `ip` under `[playstation]` to your PS5 IP address (e.g. `"192.168.1.50"`).
-   Leave empty to use automatic UDP discovery (same subnet only).
+   Leave empty to use automatic UDP discovery (same subnet only). You can also run
+   `piedalmetry discovery` at any time to broadcast for the PS and save the result
+   to `config.toml` (see [Day-to-day Commands](#day-to-day-commands)).
 2. Verify the GPIO pins under `[brake]` match your physical wiring.
    Defaults (`brake_gpio_ena = 18`, `brake_gpio_in1 = 23`, `brake_gpio_in2 = 24`)
    match the standard wiring in [docs/hardware/wiring.md](hardware/wiring.md).
@@ -155,6 +157,10 @@ piedalmetry status
 piedalmetry log --lines 20
 ```
 
+The installer also sets ownership of `/etc/piedalmetry/config.toml` to the service
+user, enabling automatic IP persistence at runtime. If you reinstall or the config
+becomes root-owned, re-run the install command to restore ownership.
+
 ## Step 8 — Verify Service Survives Reboot
 
 ```bash
@@ -176,7 +182,13 @@ piedalmetry start           # Start service
 piedalmetry stop            # Stop service
 piedalmetry restart         # Restart service
 piedalmetry troubleshoot    # Run diagnostics
+piedalmetry discovery       # Discover PS on the network and save IP to config
+piedalmetry discovery --timeout 20  # Custom timeout (default: 10 s)
 ```
+
+`piedalmetry discovery` is useful when the PS IP changes (e.g. after a router
+reboot) or when starting with `ip = ""` in config. It broadcasts, saves the
+found IP to `/etc/piedalmetry/config.toml`, and reminds you to restart the service.
 
 ## Uninstall
 
@@ -199,7 +211,7 @@ piedalmetry update
 Install a specific release:
 
 ```bash
-piedalmetry update --release v0.3.0
+piedalmetry update --release v0.3.5
 ```
 
 Update from the main branch (development / unreleased):
