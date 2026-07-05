@@ -14,6 +14,8 @@ _UNIT_TEMPLATE = """\
 Description=Piedalmetry GT7 Brake-to-Motor Feedback
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -22,6 +24,7 @@ WorkingDirectory=/tmp
 ExecStart={python} -m piedalmetry run --config {config_path}
 Restart=on-failure
 RestartSec=5
+TimeoutStartSec=30
 
 [Install]
 WantedBy=multi-user.target

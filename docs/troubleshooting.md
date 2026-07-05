@@ -24,6 +24,8 @@ port 33740 availability, and reports PASS/FAIL for each.
 | `"Address already in use"` port 33740 | Another process using the port | `sudo lsof -i :33740` to find and kill the conflicting process |
 | Service won't start on boot | Not installed as service | `sudo piedalmetry install` |
 | Service starts but stops immediately | Crash on startup — check logs | `piedalmetry log --lines 50 --level ERROR` |
+| Service shows `failed (start-limit-hit)` | 5 restart failures within 60s — real error is being hit repeatedly | `journalctl -u piedalmetry -b` to see the actual failure; fix the cause, then `sudo systemctl reset-failed piedalmetry && sudo systemctl start piedalmetry` |
+| Service takes minutes to start on boot | Restart loop hidden by permissive `Restart=on-failure` (fixed by `StartLimitBurst`); or Python `sys.path` stalling on a network mount | `systemctl show piedalmetry -p NRestarts` — if > 0, `journalctl -u piedalmetry -b` shows the underlying error. Ensure the venv and installed package live on local storage, not on a CIFS/NFS mount |
 | High latency (`latency_ms` > 50) | System overloaded or throttling | Check CPU (`top`), check temperature (`vcgencmd measure_temp`) |
 | `"lgpio: cannot open gpiochip"` | lgpio not installed or no permission | `sudo apt-get install python3-lgpio`; add user to `gpio` group |
 | Motor spins wrong direction | OUT1/OUT2 wired in reverse | Swap OUT1 and OUT2 connections at the L298N terminals |
